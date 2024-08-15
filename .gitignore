@@ -1,8 +1,7 @@
 *.csv
 **/__pycache__
 **/floorplans-main
+**/data
 **/.vscode
-**/node_modules
 *.json
-**/plots
 *.DS_Store
