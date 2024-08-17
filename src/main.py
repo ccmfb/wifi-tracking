@@ -55,7 +55,7 @@ def generate_refined_data(batch, first_batch=False):
     # Data to collect
     timestamps = batch['timestamp'].to_list()
     timestamp = timestamps[0]
-    data_batch_timestamp = [timestamp for _ in range(len(batch))]
+    data_batch_timestamp = [int(timestamp) for _ in range(len(batch))]
     data_mac = []
     data_x, data_y = [], []
     data_rssi = []
