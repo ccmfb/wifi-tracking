@@ -2,7 +2,9 @@
 Script to generate occupancy data from the refined data.
 '''
 
+import time
 import json
+
 import pandas as pd
 from tqdm import tqdm
 
@@ -106,10 +108,11 @@ for batch in tqdm(batches):
         data_building_name.append(building_name)
         data_building_popular_name.append(building_popular_name)
 
-
+date_time = [time.strftime('%d/%m/%Y %H:%M:%S', time.localtime(ts)) for ts in data_timestamp]
 
 data = {
     'timestamp': data_timestamp,
+    'date_time': date_time,
     'count': data_count,
     'room_id': data_room_id,
     'room_name': data_room_name,

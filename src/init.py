@@ -6,7 +6,7 @@ import yaml
 from tqdm import tqdm
 from shapely.geometry import Polygon
 from shapely.strtree import STRtree
-
+import pandas as pd
 
 
 floor_trees = {}
@@ -81,3 +81,14 @@ for floor_id in tqdm(floor_ids):
 
 with open('../data/id_mappings/floorId_to_roomIds.json', 'w') as file:
     json.dump(floorId_to_roomIds, file)
+
+
+# ----------------------------------------------------------------------------------------------------------------------
+
+
+data_refined_columns = {
+    'timestamp': [], 'mac': [], 'x': [], 'y': [], 'rssi': [], 'floor_id': [], 'room_id': []
+}
+
+df_refined = pd.DataFrame(data_refined_columns)
+df_refined.to_csv('../data/data_refined.csv', index=False, header=True)
