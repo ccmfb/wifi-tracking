@@ -30,7 +30,7 @@ class Device:
         self.timestamps.append(timestamp)
         self.floor_ids.append(floor_id)
 
-        self.weights.append((1/2) * np.tanh(0.1*rssi+ 7) + 0.5) # rssi < -80: approx 0, rssi = -70: 0.5, rssi > -60: approx 1
+        self.weights.append((1/2) * np.tanh(0.1*rssi + 8) + 0.5) # rssi < -80: approx 0, rssi = -70: 0.5, rssi > -60: approx 1
     
 
     def pdf(self, x, y, min_error = 0):
@@ -69,7 +69,8 @@ class Device:
                 # prob_moved = 1 - 2 * stats.norm.cdf(-radius_to_prev, 0, prev_error)
                 prob_moved = prob_moved * weights[i]
 
-                if prob_moved > 0.8:
+                print(f'prob_moved: {prob_moved}')
+                if prob_moved > 0.7:
                     break
                 else:
                     avg_x = np.sum(weights[i:] * positions[i:, 0]) / np.sum(weights[i:])
