@@ -43,57 +43,53 @@ class Device:
 
 
     def update_position(self, zValue_to_pValue):
-        N = len(self.positions)
-        weights = np.array(self.weights)
         positions = np.array(self.positions)
+        positions = positions[::-1]
+        weights = np.array(self.weights)
+        weights = weights[::-1]
 
-        prev_x = 0
-        prev_y = 0
-        prev_error = 0
+        if len(positions) == 1:
+            self.x = positions[0][0]
+            self.y = positions[0][1]
+            self.error = WIFI_ERROR
+            return
 
-        for i in range(N - 1, -1, -1): # Reverse iteration
+        prev_x = positions[0][0]
+        prev_y = positions[0][1]
+        prev_error = WIFI_ERROR
 
-            if N - i == 1:
-                avg_x = positions[i][0]
-                avg_y = positions[i][1]
-                error = WIFI_ERROR
+        for i, position in enumerate(positions[1:]):
 
+            curr_x = position[0]
+            curr_y = position[1]
+            radius_to_prev = np.sqrt((curr_x - prev_x)**2 + (curr_y - prev_y)**2)
+
+            z = radius_to_prev / prev_error
+            probability_moved = 1 - 2 * self.closest_cdf(z, zValue_to_pValue)
+            probability_moved = probability_moved * weights[i]
+            print(f'Prob. moved: {probability_moved} -- Prev. error: {prev_error}')
+
+            if probability_moved > 0.7:
+                break
+
+            upper_limit = i + 2
+            x_estimate = np.sum(weights[:upper_limit] * positions[:upper_limit, 0]) / np.sum(weights[:upper_limit])
+            y_estimate = np.sum(weights[:upper_limit] * positions[:upper_limit, 1]) / np.sum(weights[:upper_limit])
+
+            error_x = np.sqrt(np.sum(weights[:upper_limit] * (positions[:upper_limit, 0] - x_estimate)**2) / np.sum(weights[:upper_limit]))
+            error_y = np.sqrt(np.sum(weights[:upper_limit] * (positions[:upper_limit, 1] - x_estimate)**2) / np.sum(weights[:upper_limit]))
+            error_estimate = np.sqrt(error_x**2 + error_y**2)
+
+            prev_x = x_estimate
+            prev_y = y_estimate
+            if np.isnan(error_estimate) or error_estimate > WIFI_ERROR:
+                prev_error = WIFI_ERROR
             else:
-                curr_x = positions[i][0]
-                curr_y = positions[i][1]
-                radius_to_prev = np.sqrt((curr_x - prev_x)**2 + (curr_y - prev_y)**2)
+                prev_error = error_estimate
 
-                z = radius_to_prev / prev_error
-                prob_moved = 1 - 2 * self.closest_cdf(z, zValue_to_pValue)
-                # Alternatively (slower):
-                # prob_moved = 1 - 2 * stats.norm.cdf(-radius_to_prev, 0, prev_error)
-                prob_moved = prob_moved * weights[i]
-
-                print(f'prob_moved: {prob_moved}')
-                if prob_moved > 0.7:
-                    break
-                else:
-                    avg_x = np.sum(weights[i:] * positions[i:, 0]) / np.sum(weights[i:])
-                    avg_y = np.sum(weights[i:] * positions[i:, 1]) / np.sum(weights[i:])
-
-                    num_data_points = N - i
-                    if num_data_points > 3:
-                        error_x = np.sqrt(np.sum(weights[i:] * (positions[i:, 0] - avg_x)**2) / np.sum(weights[i:]))
-                        error_y = np.sqrt(np.sum(weights[i:] * (positions[i:, 1] - avg_y)**2) / np.sum(weights[i:]))
-                        error = np.sqrt(error_x**2 + error_y**2)
-                    else:
-                        error = WIFI_ERROR
-
-            prev_x = avg_x
-            prev_y = avg_y
-            prev_error = error
-
-        self.x = avg_x
-        self.y = avg_y
-        if error < 1e-1 or np.isnan(error) or error > WIFI_ERROR:
-            self.error = WIFI_ERROR 
-        else:
-            self.error = error
+        self.x = prev_x
+        self.y = prev_y
+        self.error = prev_error
 
 
     def closest_cdf(self, z_value, table):

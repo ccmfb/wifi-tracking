@@ -13,9 +13,9 @@ def generate_data(map_id, mac, positions, errors):
     xs, ys = [], []
     rssi_vals = []
     for position, error in zip(positions, errors):
-        curr_xs = np.random.normal(position[0], error, 10)
-        curr_ys = np.random.normal(position[1], error, 10)
-        curr_rssi_vals = np.random.normal(-70, 5, 10)
+        curr_xs = np.random.normal(position[0], error, 15)
+        curr_ys = np.random.normal(position[1], error, 15)
+        curr_rssi_vals = np.random.normal(-70, 5, 15)
 
         xs.extend(curr_xs)
         ys.extend(curr_ys)
@@ -42,6 +42,6 @@ if __name__ == '__main__':
     generate_data(
         map_id = '674f1f22-b555-4cb0-bdd4-df5ffe9d195f',
         mac = 'ad8f9759e8fff5207fce65da0c68f12ef2fa0446cfecf1f5ec1e01156d7843ea',
-        positions = [[10,10], [60,60], [20,70]],
-        errors = [4, 1, 3]
+        positions = [[10,10], [60,60], [20,70], [50,15]],
+        errors = [4, 1, 3, 3]
     )
