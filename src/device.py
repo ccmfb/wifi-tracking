@@ -67,7 +67,6 @@ class Device:
             z = radius_to_prev / prev_error
             probability_moved = 1 - 2 * self.closest_cdf(z, zValue_to_pValue)
             probability_moved = probability_moved * weights[i]
-            print(f'Prob. moved: {probability_moved} -- Prev. error: {prev_error}')
 
             if probability_moved > 0.7:
                 break

@@ -58,6 +58,7 @@ def generate_refined_data(batch, first_batch=False):
     data_batch_timestamp = [int(timestamp) for _ in range(len(batch))]
     data_mac = []
     data_x, data_y = [], []
+    data_error = []
     data_rssi = []
     data_floor_id = []
     data_room_id = []
@@ -119,6 +120,7 @@ def generate_refined_data(batch, first_batch=False):
         data_mac.append(device.mac)
         data_x.append(device.x)
         data_y.append(device.y)
+        data_error.append(device.error)
         data_rssi.append(device.rssi_values[-1])
         data_floor_id.append(floor_id)
         data_room_id.append(room_id)
@@ -132,6 +134,7 @@ def generate_refined_data(batch, first_batch=False):
         data_mac,
         data_x,
         data_y,
+        data_error,
         data_rssi,
         data_floor_id,
         data_room_id

@@ -87,7 +87,7 @@ with open('../data/id_mappings/floorId_to_roomIds.json', 'w') as file:
 
 
 data_refined_columns = {
-    'timestamp': [], 'mac': [], 'x': [], 'y': [], 'rssi': [], 'floor_id': [], 'room_id': []
+    'timestamp': [], 'mac': [], 'x': [], 'y': [], 'error': [], 'rssi': [], 'floor_id': [], 'room_id': []
 }
 
 df_refined = pd.DataFrame(data_refined_columns)
