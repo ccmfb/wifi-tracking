@@ -68,16 +68,19 @@ class Device:
             probability_moved = 1 - 2 * self.closest_cdf(z, zValue_to_pValue)
             probability_moved = probability_moved * weights[i]
 
-            if probability_moved > 0.7:
+            if probability_moved > 0.8:
                 break
 
             upper_limit = i + 2
             x_estimate = np.sum(weights[:upper_limit] * positions[:upper_limit, 0]) / np.sum(weights[:upper_limit])
             y_estimate = np.sum(weights[:upper_limit] * positions[:upper_limit, 1]) / np.sum(weights[:upper_limit])
 
-            error_x = np.sqrt(np.sum(weights[:upper_limit] * (positions[:upper_limit, 0] - x_estimate)**2) / np.sum(weights[:upper_limit]))
-            error_y = np.sqrt(np.sum(weights[:upper_limit] * (positions[:upper_limit, 1] - x_estimate)**2) / np.sum(weights[:upper_limit]))
-            error_estimate = np.sqrt(error_x**2 + error_y**2)
+            if i == 0:
+                error_estimate = WIFI_ERROR
+            else:
+                error_x = np.sqrt(np.sum(weights[:upper_limit] * (positions[:upper_limit, 0] - x_estimate)**2) / np.sum(weights[:upper_limit]))
+                error_y = np.sqrt(np.sum(weights[:upper_limit] * (positions[:upper_limit, 1] - y_estimate)**2) / np.sum(weights[:upper_limit]))
+                error_estimate = np.sqrt(error_x**2 + error_y**2)
 
             prev_x = x_estimate
             prev_y = y_estimate

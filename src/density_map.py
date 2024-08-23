@@ -11,11 +11,17 @@ from shapely.geometry import Polygon, Point
 from shapely.vectorized import contains, touches
 import matplotlib.pyplot as plt
 
-MIN_DISPLAY_ERROR = 3
+MIN_DISPLAY_ERROR = 1
+MAX_DISPLAY_ERROR = 6
 
 
 def get_density_image(floor_id, batch):
+    batch = batch[batch['floor_id'] == floor_id]
+    batch = batch.reset_index(drop=True)
+    print(len(batch))
+
     density_map, rooms = get_density_map(floor_id, batch)
+    print(density_map)
 
     fig, ax = plt.subplots(figsize=(10, 10))
 
@@ -36,7 +42,18 @@ def get_density_image(floor_id, batch):
 
         ax.plot(xs, ys, 'grey')
 
-    ax.imshow(density_map / 255, zorder=0)
+    for i in range(len(batch)):
+        if batch['room_id'][i] is None:
+            continue
+        #circle
+        x = (batch['x'][i] - min_x) * 20
+        y = (batch['y'][i] - min_y) * 20
+        error = batch['error'][i] * 20
+        circle = plt.Circle((x, y), error, color='black', fill=False)
+        ax.add_patch(circle)
+
+    ax.imshow(density_map/ 255, zorder=0, alpha=0.6)
+    #ax.contourf(density_map, zorder=0, alpha=0.6)
     ax.axis('off')
     plt.tight_layout()
 
@@ -80,10 +97,19 @@ def get_density_map(floor_id, batch):
     density_map = density_map * mask_density_map
     density_map = density_map / np.max(density_map)
 
+    density_map = np.array(density_map)
+    # density_map = np.power(density_map, 3)
+    # density_map = (1/2) * np.sin(np.pi * density_map - np.pi/2) + 1/2
+    # density_map = np.sin(density_map * np.pi/2) * np.sin(density_map * np.pi/2) * np.sin(density_map * np.pi/2) * np.sin(density_map * np.pi/2) * np.sin(density_map * np.pi/2)
+    density_map = (np.sin(density_map * np.pi/2))**4
+
     rgba_density_map = np.zeros((len(density_map), len(density_map[0]), 4))
     for i in range(len(density_map)):
         for j in range(len(density_map[0])):
             rgba_density_map[i][j] = get_contour_rgba(density_map[i][j])
+            # rgba_density_map[i][j] = get_rgba(density_map[i][j])
+            # rgba_density_map[i][j] = get_cmap_value(density_map[i][j])
+
 
     return rgba_density_map, rooms
 
@@ -91,6 +117,8 @@ def get_density_map(floor_id, batch):
 def pdf(x, y, x0, y0, error):
     if error < MIN_DISPLAY_ERROR:
         error = MIN_DISPLAY_ERROR
+    elif error > MAX_DISPLAY_ERROR:
+        error = MAX_DISPLAY_ERROR
     return np.exp(
         (- (x - x0)**2 - (y - y0)**2) / (2 * np.pi * error**2)
     )
@@ -119,57 +147,91 @@ def get_mesh_and_mask(rooms):
     return xx, yy, matrix
 
 
+def get_cmap_value(value):
+    cmap = plt.get_cmap('coolwarm')
+
+    contour_bounds = np.linspace(0, 1, 8)
+    contour_values = np.linspace(0, 1, 7)
+
+    if value < 0:
+        return [255, 255, 255, 0]
+    
+    for i in range(len(contour_values)):
+        if contour_bounds[i] <= value < contour_bounds[i + 1]:
+            return cmap(contour_values[i])
+        
+    return cmap(1)
+
+
 def get_contour_rgba(value):
     assert 0 <= value <= 1
 
     bounds = np.linspace(0, 1, 8)
     alpha = 0.8 * 255
+    color1 = np.array([77, 103, 255])
+    color2 = np.array([255, 240, 102])
+    color3 = np.array([255, 96, 96])
+
+    gradient = [
+        color1,
+        color1 + (1/3) * (color2 - color1), color1 + (2/3) * (color2 - color1),
+        color2,
+        color2 + (1/3) * (color3 - color2), color2 + (2/3) * (color3 - color2),
+        color3
+    ]
+    gradient = [np.append(color, alpha) for color in gradient]
+
 
     if value == 0:
         return [255, 255, 255, 0]
-    elif bounds[0] < value < bounds[1]:
-        return [255, 255, 255, alpha]
-    elif bounds[1] <= value < bounds[2]:
-        return [197, 212, 245, alpha]
-    elif bounds[2] <= value < bounds[3]:
-        return [135, 171, 235, alpha]
-    elif bounds[3] <= value < bounds[4]:
-        return [52, 132, 223, alpha]
-    elif bounds[4] <= value < bounds[5]:
-        return [157, 122, 175, alpha]
-    elif bounds[5] <= value < bounds[6]:
-        return [212, 106, 128, alpha]
-    elif bounds[6] <= value <= bounds[7]:
-        return [255, 82, 82, alpha]
+    
+    for i in range(7):
+        if bounds[i] <= value < bounds[i + 1]:
+            return gradient[i]
+
+    if value == 1:
+        return [255, 96, 96, alpha]
 
 
 
 def get_rgba(value):
-    # value needs to be between 0 and 1
-    white = np.array([255, 255, 255])
-    blue = np.array([129, 169, 238])
-    red = np.array([242, 95, 92])
+    '''
+    Pure gradient
+    '''
+    assert 0 <= value <= 1
+
+    alpha = 0.8 * 255
+    color1 = np.array(
+        [77, 103, 255]
+    )
+    color2 = np.array(
+        [255, 240, 102]
+    )
+    color3 = np.array(
+        [255, 96, 96]
+    )
 
     color = None
 
     if value == 0:
-        color = white
+        return np.array([255, 255, 255, 0])
 
     elif 0 < value < 0.5:
         factor = value / 0.5
-        color = white + factor * (blue - white)
+        color = color1 + factor * (color2 - color1)
 
     elif value == 0.5:
-        color = blue
+        color = color2
 
     elif 0.5 < value < 1:
         factor = (value - 0.5) / 0.5
-        color = blue + factor * (red - blue)
+        color = color2 + factor * (color3 - color2)
 
     elif value == 1:
-        color = red
+        color = color3
 
-    return [int(num) for num in color]
+    color = np.append(color, alpha)
+    return color
 
 
 if __name__ == '__main__':
