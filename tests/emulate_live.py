@@ -2,7 +2,7 @@ import sys
 sys.path.append('../src')
 sys.path.append('..')
 
-from main import generate_refined_data
+from main_old import generate_refined_data
 
 from tqdm import tqdm
 import pandas as pd
@@ -30,8 +30,8 @@ for i, timestamp in enumerate(timestamps):
         cutoff_indices.append(i)
         prev_timestamp = timestamp
 
-    # if len(cutoff_indices) == 2*6*6*1:
-        # break
+    if len(cutoff_indices) == 2*6*6*1:
+        break
 
 #print(cutoff_indices)
 batches = []

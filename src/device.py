@@ -94,6 +94,20 @@ class Device:
         self.error = prev_error
 
 
+    def is_active(self, active_time: float, active_count: int) -> bool:
+
+        if self.timestamps[-1] < self.timestamps[-1] - active_time:
+            return False
+
+        if len(self.positions) < active_count:
+            return False
+
+        if self.floor_ids[-1] != self.floor_ids[-2]:
+            return False
+
+        return True
+
+
     def closest_cdf(self, z_value, table):
         z_values = list(table.keys())
         closest_index = bisect.bisect_left(z_values, z_value)
