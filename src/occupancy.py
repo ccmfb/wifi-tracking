@@ -12,11 +12,6 @@ from tqdm import tqdm
 with open('../data/id_mappings/floorId_to_roomIds.json', 'r') as file:
     floorId_to_roomIds = json.load(file)
 
-#   roomId_to_floorId = {}
-#   for floor_id, room_ids in floorId_to_roomIds.items():
-    #   for room_id in room_ids:
-        #   roomId_to_floorId[room_id] = floor_id
-
 df = pd.read_csv('../data/data_refined.csv')
 timestamps_unique = df['timestamp'].unique()
 
