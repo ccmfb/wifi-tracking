@@ -43,7 +43,10 @@ def get_density_image(floor_id, batch, plot_devices=False):
         current_pdf = pdf(xx, yy, batch['x'][i], batch['y'][i], batch['error'][i])
         density_map += current_pdf
 
+
+    density_map[density_map < 1.1] = 0
     density_map = density_map / np.max(density_map)
+    density_map = ( np.sin(density_map * np.pi / 2) )**2
 
     matrix = np.zeros_like(xx, dtype=int)
     for room in rooms:
@@ -55,7 +58,7 @@ def get_density_image(floor_id, batch, plot_devices=False):
 
     fig, ax = plt.subplots()
 
-    alpha = 0.6
+    alpha = 0.5
     blue = np.array([71, 175, 255]) / 255
     yellow = np.array([255, 209, 71]) / 255
     red = np.array([254, 84, 72]) / 255
@@ -63,6 +66,7 @@ def get_density_image(floor_id, batch, plot_devices=False):
     colors = [(0, blue), (0.5, yellow), (1, red)]
     colors = [(c[0], [*c[1], alpha]) for c in colors]
     cmap = LinearSegmentedColormap.from_list('custom', colors)
+    # cmap = 'coolwarm'
 
     contour = ax.contourf(xx, yy, density_map, cmap=cmap)
 
@@ -81,7 +85,7 @@ def get_density_image(floor_id, batch, plot_devices=False):
             elif error > MAX_DISPLAY_ERROR:
                 error = MAX_DISPLAY_ERROR
             
-            circle = plt.Circle((x, y), error, color='black', fill=False)
+            circle = plt.Circle((x, y), error, color='black', fill=False, zorder=2)
             ax.add_patch(circle)
 
 
@@ -104,4 +108,4 @@ def pdf(x, y, x0, y0, error):
     elif error > MAX_DISPLAY_ERROR:
         error = MAX_DISPLAY_ERROR
 
-    return np.exp(-((x - x0) ** 2 + (y - y0) ** 2) / (2 * error ** 2)) / (2 * np.pi * error ** 2)
+    return np.exp(-((x - x0) ** 2 + (y - y0) ** 2) / (2 * error ** 2))
