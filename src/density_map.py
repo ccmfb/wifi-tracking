@@ -6,13 +6,14 @@ import numpy as np
 from shapely.geometry import Polygon, Point
 from shapely.vectorized import contains, touches
 import matplotlib.pyplot as plt
+from matplotlib.colors import LinearSegmentedColormap
 
 
 MIN_DISPLAY_ERROR = 2
 MAX_DISPLAY_ERROR = 10
 
 
-def get_density_image(floor_id, batch):
+def get_density_image(floor_id, batch, plot_devices=False):
     batch = batch[batch['floor_id'] == floor_id]
     batch = batch[~np.isnan(batch['room_id'])]
     batch = batch.reset_index(drop=True)
@@ -54,13 +55,21 @@ def get_density_image(floor_id, batch):
 
     fig, ax = plt.subplots()
 
-    contour = ax.contourf(xx, yy, density_map, cmap='coolwarm')
+    alpha = 0.6
+    blue = np.array([71, 175, 255]) / 255
+    yellow = np.array([255, 209, 71]) / 255
+    red = np.array([254, 84, 72]) / 255
+
+    colors = [(0, blue), (0.5, yellow), (1, red)]
+    colors = [(c[0], [*c[1], alpha]) for c in colors]
+    cmap = LinearSegmentedColormap.from_list('custom', colors)
+
+    contour = ax.contourf(xx, yy, density_map, cmap=cmap)
 
     for room in rooms:
         x, y = room.exterior.xy
         ax.plot(x, y, color='silver', zorder=1)
 
-    plot_devices = False
     if plot_devices:
         for i in range(len(batch)):
             x = batch['x'][i]
