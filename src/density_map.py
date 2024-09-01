@@ -3,6 +3,7 @@ import pickle
 from io import BytesIO
 
 import numpy as np
+import pandas as pd
 from shapely.geometry import Polygon, Point
 from shapely.vectorized import contains, touches
 import matplotlib.pyplot as plt
@@ -34,6 +35,16 @@ def get_density_image(floor_id, batch, plot_devices=False):
 
 
 def get_rooms(floor_id: int) -> list:
+    '''
+    Returns a list of shapely Polygon objects representing the rooms in the given floor.
+
+    Args:
+        floor_id (int): The floor id.
+
+    Returns:
+        list: A list of shapely Polygon objects.
+    '''
+
     with open('../../data/id_mappings/floorId_to_roomIds.json', 'r') as file:
         floorId_to_roomIds = json.load(file)
 
@@ -46,7 +57,18 @@ def get_rooms(floor_id: int) -> list:
     return rooms
 
 
-def meshgrid(rooms, grid_size=0.1) -> tuple:
+def meshgrid(rooms: list, grid_size: float = 0.1) -> tuple:
+    '''
+    Returns a meshgrid of x and y coordinates based on the rooms.
+    
+    Args:
+        rooms (list): A list of shapely Polygon objects.
+        grid_size (float): The grid size.
+        
+    Returns:
+        tuple: A tuple of numpy arrays representing the mesh
+    '''
+
     min_x = min([room.bounds[0] for room in rooms])
     min_y = min([room.bounds[1] for room in rooms])
     max_x = max([room.bounds[2] for room in rooms])
@@ -59,7 +81,19 @@ def meshgrid(rooms, grid_size=0.1) -> tuple:
     return xx, yy
 
 
-def get_density_map(batch, xx, yy) -> np.ndarray:
+def get_density_map(batch: pd.DataFrame, xx: np.ndarray, yy: np.ndarray) -> np.ndarray:
+    '''
+    Generates a density map based on the devices in the batch.
+    
+    Args:
+        batch (pandas.DataFrame): The batch of devices.
+        xx (numpy.ndarray): The x coordinates.
+        yy (numpy.ndarray): The y coordinates.
+        
+    Returns:
+        numpy.ndarray: The density map
+    '''
+
     density_map = np.zeros(xx.shape)
 
     for i in range(len(batch)):
@@ -69,7 +103,17 @@ def get_density_map(batch, xx, yy) -> np.ndarray:
     return density_map
 
 
-def scale_density_map(density_map) -> np.ndarray:
+def scale_density_map(density_map: np.ndarray) -> np.ndarray:
+    '''
+    Removes single device peaks and scales the density map.
+    
+    Args:
+        density_map (numpy.ndarray): The density map.
+        
+    Returns:
+        numpy.ndarray: The scaled density map.
+    '''
+
     density_map[density_map < 1.1] = 0
     density_map = density_map / np.max(density_map)
     density_map = ( np.sin(density_map * np.pi / 2) )**2
@@ -78,6 +122,19 @@ def scale_density_map(density_map) -> np.ndarray:
 
 
 def mask_density_map(density_map, rooms, xx, yy) -> np.ndarray:
+    '''
+    Masks the area outside the rooms in the density map.
+    
+    Args:
+        density_map (numpy.ndarray): The density map.
+        rooms (list): A list of shapely Polygon objects.
+        xx (numpy.ndarray): The x coordinates.
+        yy (numpy.ndarray): The y coordinates.
+        
+    Returns:
+        numpy.ndarray: The masked density map.
+    '''
+
     matrix = np.zeros_like(xx, dtype=int)
 
     for room in rooms:
@@ -93,29 +150,57 @@ def mask_density_map(density_map, rooms, xx, yy) -> np.ndarray:
 def custom_colormap(
         color1: list = [71, 175, 255], 
         color2: list = [255, 209, 71],
-        color3: list = [254, 84, 72],
-        alpha: float = 0.5):
+        color3: list = [254, 84, 72]) -> LinearSegmentedColormap:
+    '''
+    Custom colormap based on three colours.
+    
+    Args:
+        color1 (list): The first color.
+        color2 (list): The second color.
+        color3 (list): The third color.
+        
+    Returns:
+        matplotlib.colors.LinearSegmentedColormap: The custom colormap.
+    '''
 
     color1 = [c / 255 for c in color1]
     color2 = [c / 255 for c in color2]
     color3 = [c / 255 for c in color3]
 
-    color1.append(alpha)
-    color2.append(alpha)
-    color3.append(alpha)
-
     colors = [(0, color1), (0.5, color2), (1, color3)]
     cmap = LinearSegmentedColormap.from_list('custom', colors)
-    # cmap = 'coolwarm'
+    cmap = 'coolwarm'
 
     return cmap
 
 
-def plot_density_map(density_map, xx, yy, rooms, batch, plot_devices = False):
+def plot_density_map(
+        density_map: np.ndarray, 
+        xx: np.ndarray, 
+        yy: np.ndarray, 
+        rooms: list, 
+        batch: pd.DataFrame, 
+        plot_devices: bool = False) -> BytesIO:
+    '''
+    Plots the density map.
+    
+    Args:
+        density_map (numpy.ndarray): The density map.
+        xx (numpy.ndarray): The x coordinates.
+        yy (numpy.ndarray): The y coordinates.
+        rooms (list): A list of shapely Polygon objects.
+        batch (pandas.DataFrame): The batch of devices.
+        plot_devices (bool): Whether to plot the devices.
+        
+    Returns:
+        BytesIO: The image buffer.
+    '''
+
     fig, ax = plt.subplots(figsize=(8, 8))
 
     cmap = custom_colormap()
-    ax.contourf(xx, yy, density_map, cmap=cmap)
+    alpha = 0.6
+    ax.contourf(xx, yy, density_map, cmap=cmap, alpha=alpha)
 
     for room in rooms:
         x, y = room.exterior.xy
@@ -135,7 +220,18 @@ def plot_density_map(density_map, xx, yy, rooms, batch, plot_devices = False):
     return buffer
 
 
-def plot_devices_in_batch(batch, ax):
+def plot_devices_in_batch(batch: pd.DataFrame, ax) -> None:
+    '''
+    Plots the devices in the batch.
+    
+    Args:
+        batch (pandas.DataFrame): The batch of devices.
+        ax (matplotlib.axes.Axes): The axes.
+
+    Returns:
+        None
+    '''
+
     for i in range(len(batch)):
         x = batch['x'][i]
         y = batch['y'][i]
@@ -150,7 +246,21 @@ def plot_devices_in_batch(batch, ax):
         ax.add_patch(circle)
 
 
-def pdf(x, y, x0, y0, error):
+def pdf(x: np.ndarray, y: np.ndarray, x0: float, y0: float, error: float) -> np.ndarray:
+    '''
+    Probability density function.
+    
+    Args:
+        x (numpy.ndarray): The x coordinates.
+        y (numpy.ndarray): The y coordinates.
+        x0 (float): The x coordinate of the device.
+        y0 (float): The y coordinate of the device.
+        error (float): The error of the device.
+        
+    Returns:
+        numpy.ndarray: The probability density function.
+    '''
+
     if error < MIN_DISPLAY_ERROR:
         error = MIN_DISPLAY_ERROR
     elif error > MAX_DISPLAY_ERROR:
