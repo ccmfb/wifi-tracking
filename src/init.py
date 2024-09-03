@@ -21,6 +21,16 @@ def init() -> None:
     
 
 def generate_saved_objects(floor_ids: list) -> None:
+    '''
+    Generate and save the room geometries and floor trees for each floor.
+    
+    Args:
+        floor_ids (list): List of floor IDs.
+        
+    Returns:
+        None
+    '''
+
     room_geometries = {}
     floor_trees = {}
     
@@ -51,6 +61,16 @@ def generate_saved_objects(floor_ids: list) -> None:
 
 
 def generate_id_mappings(floor_ids: list) -> None:
+    '''
+    Generate and save the mapping of floor IDs to room IDs.
+    
+    Args:
+        floor_ids (list): List of floor IDs.
+        
+    Returns:
+        None
+    '''
+
     floorId_to_roomIds = {}
 
     for floor_id in tqdm(floor_ids):
@@ -67,6 +87,16 @@ def generate_id_mappings(floor_ids: list) -> None:
     
 
 def generate_refined_data_file(floor_ids: list) -> None:
+    '''
+    Generate and save the empty refined data file.
+    
+    Args:
+        floor_ids (list): List of floor IDs.
+        
+    Returns:
+        None
+    '''
+
     data_refined_columns = {
         'timestamp': [], 'mac': [], 'x': [], 'y': [], 'error': [], 'rssi': [], 'floor_id': [], 'room_id': []
     }
@@ -76,6 +106,13 @@ def generate_refined_data_file(floor_ids: list) -> None:
 
 
 def get_floor_ids() -> list:
+    '''
+    Retrieve the list of floor IDs from the floorplans directory.
+    
+    Returns:
+        floor_ids (list): List of floor IDs.
+    '''
+
     path_floorsById = f'{PATH_FLOORPLANS}/floors_by_id'
 
     all_entries = os.listdir(path_floorsById)
@@ -85,6 +122,16 @@ def get_floor_ids() -> list:
 
 
 def get_floor_offset(building_id: int) -> list:
+    '''
+    Get the offset of the floor from state.yaml files.
+    
+    Args:
+        building_id (int): Building ID.
+        
+    Returns:
+        offset (list): Offset of the floor.
+    '''
+
     path_buildingState = f'{PATH_FLOORPLANS}/buildings_by_id/{building_id}/state.yaml'
 
     if not os.path.exists(path_buildingState):
@@ -102,11 +149,23 @@ def get_floor_offset(building_id: int) -> list:
     return offset
 
 
-def generate_room_geometries(data_workspac: dict, offset: list) -> tuple:
+def generate_room_geometries(data_workspace: dict, offset: list) -> tuple:
+    '''
+    Generate the room geometries and floor tree for a floor.
+    
+    Args:
+        data_workspace (dict): Workspace data of the floor.
+        offset (list): Offset of the floor.
+        
+    Returns:
+        room_geometries (dict): Dictionary of room geometries.
+        floor_tree (STRtree): STRtree of room geometries.
+    '''
+
     room_geometries = {}
     current_polygons = []
 
-    for room in data_workspac:
+    for room in data_workspace:
         room_id = room['id']
         
         room_coords = []
