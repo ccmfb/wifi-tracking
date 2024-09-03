@@ -8,6 +8,16 @@ WIFI_ERROR = 10
 
 class Device:
     def __init__(self, mac) -> None:
+        '''
+        Initializes the device object.
+        
+        Args:
+            mac (str): The MAC address of the device.
+            
+        Returns:
+            None
+        '''
+
         self.mac = mac
 
         self.positions = []
@@ -24,7 +34,21 @@ class Device:
         self.floor_ids = []
 
 
-    def add_data(self, x, y, rssi, timestamp, floor_id):
+    def add_data(self, x: float, y: float, rssi: float, timestamp: int, floor_id: int) -> None:
+        '''
+        Add data to the device object.
+        
+        Args:
+            x (float): x-coordinate of the device.
+            y (float): y-coordinate of the device.
+            rssi (float): RSSI value of the device.
+            timestamp (int): Timestamp of the data.
+            floor_id (int): Floor ID of the data.
+            
+        Returns:
+            None
+        '''
+
         self.positions.append([x, y])
         self.rssi_values.append(rssi)
         self.timestamps.append(timestamp)
@@ -33,16 +57,17 @@ class Device:
         self.weights.append((1/2) * np.tanh(0.1*rssi + 8) + 0.5) # rssi < -80: approx 0, rssi = -70: 0.5, rssi > -60: approx 1
     
 
-    def pdf(self, x, y, min_error = 0):
-        error = self.error if self.error > min_error else min_error
-        pdf = np.exp(
-            (- (x - self.x)**2 - (y - self.y)**2) / (2 * np.pi * error**2)
-        )
+    def update_position(self, zValue_to_pValue: dict) -> None:
+        '''
+        Calculates the optimized position of the device based on averages of past positions and probability of movement.
+        
+        Args:
+            zValue_to_pValue (dict): A dictionary mapping z-values (normalized distance) to p-values (probabilities).
+            
+        Returns:
+            None
+        '''
 
-        return pdf
-
-
-    def update_position(self, zValue_to_pValue):
         positions = np.array(self.positions)
         positions = positions[::-1]
         weights = np.array(self.weights)
@@ -95,6 +120,16 @@ class Device:
 
 
     def is_active(self, active_time: float, active_count: int) -> bool:
+        '''
+        Checks if the device is active based on certain criteria.
+        
+        Args:
+            active_time (float): The time in seconds since the last data point.
+            active_count (int): The number of data points to be considered active.
+            
+        Returns:
+            bool: True if the device is active, False otherwise.
+        '''
 
         if self.timestamps[-1] < self.timestamps[-1] - active_time:
             return False
@@ -109,6 +144,17 @@ class Device:
 
 
     def closest_cdf(self, z_value, table):
+        '''
+        Returns the closest p-value to the given z-value from the given table. Replaces explicit calculations of the CDF.
+        
+        Args:
+            z_value (float): The z-value.
+            table (dict): A dictionary mapping z-values to p-values.
+            
+        Returns:
+            float: The closest p-value to the given z-value.
+        '''
+
         z_values = list(table.keys())
         closest_index = bisect.bisect_left(z_values, z_value)
         
