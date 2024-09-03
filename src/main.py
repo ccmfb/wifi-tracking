@@ -16,6 +16,17 @@ ACTIVE_COUNT = 2 # If device is not at least seen 2 times, it is considered inac
 
 
 def generate_refined_data(batch: pd.DataFrame, first_batch: bool = False) -> None:
+    '''
+    Generate refined data from the batch data.
+    
+    Args:
+        batch (pd.DataFrame): Batch data.
+        first_batch (bool): If the batch is the first batch.
+        
+    Returns:
+        None
+    '''
+
     batch = batch.reset_index(drop=True)
 
     mapId_to_floorId = get_mapId_to_floorId()
@@ -43,6 +54,21 @@ def generate_refined_data(batch: pd.DataFrame, first_batch: bool = False) -> Non
 
 
 def get_refined_data(devices_in_batch: dict, timestamp: int, zValue_to_pValue: dict, floorId_to_roomIds: dict, room_geometries: dict, floor_trees: dict) -> dict:
+    '''
+    Get refined data from the devices in the batch.
+    
+    Args:
+        devices_in_batch (dict): Devices in the batch.
+        timestamp (int): Timestamp of the data.
+        zValue_to_pValue (dict): Mapping of z-values to p-values.
+        floorId_to_roomIds (dict): Mapping of floor IDs to room IDs.
+        room_geometries (dict): Room geometries.
+        floor_trees (dict): Floor trees.
+        
+    Returns:
+        dict: Refined data.
+    '''
+
     data_timestamps = [timestamp for _ in range(len(devices_in_batch))]
     data_mac = []
     data_x, data_y = [], []
@@ -96,6 +122,17 @@ def get_refined_data(devices_in_batch: dict, timestamp: int, zValue_to_pValue: d
 
 
 def get_devices_in_batch(batch: pd.DataFrame, recent_devices: dict, mapId_to_floorId: dict) -> dict:
+    '''
+    Get devices in the batch.
+    
+    Args:
+        batch (pd.DataFrame): Batch data.
+        recent_devices (dict): Recent devices.
+        mapId_to_floorId (dict): Mapping of map IDs to floor IDs.
+        
+    Returns:
+        dict: Devices in the batch.
+    '''
 
     devices_in_batch = {}
     for i in range(len(batch)):
@@ -124,6 +161,18 @@ def get_devices_in_batch(batch: pd.DataFrame, recent_devices: dict, mapId_to_flo
 
 
 def save_recent_devices(recent_devices: dict, devices_in_batch: dict, timestamp: int) -> None:
+    '''
+    Save recent devices.
+    
+    Args:
+        recent_devices (dict): Recent devices.
+        devices_in_batch (dict): Devices in the batch.
+        timestamp (int): Timestamp of the data.
+        
+    Returns:
+        None
+    '''
+
     recent_devices.update(devices_in_batch)
     new_recent_devices = {}
 
@@ -136,6 +185,13 @@ def save_recent_devices(recent_devices: dict, devices_in_batch: dict, timestamp:
 
 
 def get_mapId_to_floorId() -> dict:
+    '''
+    Get mapping of map IDs to floor IDs.
+    
+    Returns:
+        dict: Mapping of map IDs to floor IDs.
+    '''
+
     with open('../data/id_mappings/floorId_to_mapId.json', 'r') as file:
         floorId_to_mapId = json.load(file)
         mapId_to_floorId = {v: k for k, v in floorId_to_mapId.items()}
@@ -144,6 +200,13 @@ def get_mapId_to_floorId() -> dict:
 
 
 def get_zValue_to_pValue() -> dict:
+    '''
+    Get mapping of z-values to p-values.
+    
+    Returns:
+        dict: Mapping of z-values to p-values.
+    '''
+
     with open('../data/zValue_to_pValue.json', 'r') as file:
         zValue_to_pValue = json.load(file)
         zValue_to_pValue = {float(k): v for k, v in zValue_to_pValue.items()}
@@ -152,6 +215,16 @@ def get_zValue_to_pValue() -> dict:
 
 
 def get_recent_devices(first_batch: bool) -> dict:
+    '''
+    Get recent devices.
+    
+    Args:
+        first_batch (bool): If the batch is the first batch.
+    
+    Returns:
+        dict: Recent devices.
+    '''
+
     if first_batch:
         return {}
     else:
@@ -162,6 +235,13 @@ def get_recent_devices(first_batch: bool) -> dict:
 
 
 def get_floorId_to_roomIds() -> dict:
+    '''
+    Get mapping of floor IDs to room IDs.
+    
+    Returns:
+        dict: Mapping of floor IDs to room IDs.
+    '''
+
     with open('../data/id_mappings/floorId_to_roomIds.json', 'r') as file:
         floorId_to_roomIds = json.load(file)
 
@@ -169,6 +249,13 @@ def get_floorId_to_roomIds() -> dict:
 
 
 def get_room_geometries() -> dict:
+    '''
+    Get room geometries.
+    
+    Returns:
+        dict: Room geometries.
+    '''
+
     with open('../data/objects/room_geometries.pkl', 'rb') as file:
         room_geometries = pickle.load(file)
 
@@ -176,6 +263,13 @@ def get_room_geometries() -> dict:
 
 
 def get_floor_trees() -> dict:
+    '''
+    Get floor trees.
+    
+    Returns:
+        dict: Floor trees.
+    '''
+    
     with open('../data/objects/floor_trees.pkl', 'rb') as file:
         floor_trees = pickle.load(file)
 

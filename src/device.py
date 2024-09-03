@@ -7,7 +7,7 @@ WIFI_ERROR = 10
 
 
 class Device:
-    def __init__(self, mac) -> None:
+    def __init__(self, mac: str) -> None:
         '''
         Initializes the device object.
         
@@ -143,7 +143,7 @@ class Device:
         return True
 
 
-    def closest_cdf(self, z_value, table):
+    def closest_cdf(self, z_value: float, table: dict) -> float:
         '''
         Returns the closest p-value to the given z-value from the given table. Replaces explicit calculations of the CDF.
         
