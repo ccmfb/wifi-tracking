@@ -2,16 +2,16 @@ import sys
 sys.path.append('../src')
 sys.path.append('..')
 
-from main_old import generate_refined_data
+from main import generate_refined_data
 
 from tqdm import tqdm
 import pandas as pd
 
 
 # Reset stored data
-with open('../src/init.py') as f:
-    code = compile(f.read(), '../src/init.py', 'exec')
-    exec(code)
+# with open('../src/init.py') as f:
+    # code = compile(f.read(), '../src/init.py', 'exec')
+    # exec(code)
 
 
 df = pd.read_csv('../data/data.csv')

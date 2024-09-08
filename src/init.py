@@ -15,16 +15,18 @@ PATH_FLOORPLANS = '../data/floorplans-main'
 
 
 def init() -> None:
-    floor_ids = get_floor_ids()
     api = API_Requests()
+    floor_ids = api.get_floor_ids()
 
-    init_saved_objects(floor_ids)
-    init_floor_to_rooms_mapping(floor_ids)
+    init_saved_objects(floor_ids, api)
+    init_floor_to_rooms_mapping(floor_ids, api)
     init_department_mappings(api)
     init_refined_data_file(floor_ids)
 
+    print('Initialising necessary files complete.')
 
-def init_saved_objects(floor_ids: list) -> None:
+
+def init_saved_objects(floor_ids: list, api: API_Requests) -> None:
     '''
     Generate and save the room geometries and floor trees for each floor.
     
@@ -34,27 +36,22 @@ def init_saved_objects(floor_ids: list) -> None:
     Returns:
         None
     '''
+    print('Generating room geometries and floor trees...')
 
     room_geometries = {}
     floor_trees = {}
     
     for floor_id in tqdm(floor_ids):
-        path_floorWorkspace = f'{PATH_FLOORPLANS}/floors_by_id/{floor_id}/workspace.json'
-        path_floorInfo = f'{PATH_FLOORPLANS}/floors_by_id/{floor_id}/info.json'
-
-        with open(path_floorWorkspace, 'r') as file:
-            data_workspace = json.load(file)
-
-        with open(path_floorInfo, 'r') as file:
-            data_info = json.load(file)
-
-        # data_workspace = get_data_workspace(floor_id)
-        # data_info = get_data_info(floor_id)
+        data_workspace = api.get_floor_workspace_info(floor_id)
+        data_info = api.get_floor_info(floor_id)
 
         building_id = int(data_info['buildingId'])
         offset = get_floor_offset(building_id)
         
-        if offset is None: continue
+        if offset is None:
+            continue
+            # print('Warning: Offset not found for floor ', floor_id)
+            # offset = [0, 0]
 
         current_room_geometries, current_floor_tree = generate_room_geometries(data_workspace, offset)
         room_geometries.update(current_room_geometries)
@@ -67,7 +64,7 @@ def init_saved_objects(floor_ids: list) -> None:
         pickle.dump(floor_trees, file)
 
 
-def init_floor_to_rooms_mapping(floor_ids: list) -> None:
+def init_floor_to_rooms_mapping(floor_ids: list, api: API_Requests) -> None:
     '''
     Generate and save the mapping of floor IDs to room IDs.
     
@@ -77,16 +74,12 @@ def init_floor_to_rooms_mapping(floor_ids: list) -> None:
     Returns:
         None
     '''
+    print('Generating floor to room mappings...')
 
     floorId_to_roomIds = {}
 
     for floor_id in tqdm(floor_ids):
-        path_floorWorkspace = f'{PATH_FLOORPLANS}/floors_by_id/{floor_id}/workspace.json'
-
-        with open(path_floorWorkspace, 'r') as file:
-            data_workspace = json.load(file)
-
-        room_ids = [room['id'] for room in data_workspace]
+        room_ids = api.get_floor_roomIds(floor_id)
         floorId_to_roomIds[floor_id] = room_ids
 
     with open(f'../data/id_mappings/floorId_to_roomIds.json', 'w') as file:
@@ -103,6 +96,7 @@ def init_department_mappings(api: API_Requests) -> None:
     Returns:
         department_mappings (dict): Dictionary of department mappings.
     '''
+    print('Generating department mappings...')
 
     organisations = api.get_organisations()
 
@@ -129,6 +123,7 @@ def init_refined_data_file(floor_ids: list) -> None:
     Returns:
         None
     '''
+    print('Generating refined data file...')
 
     data_refined_columns = {
         'timestamp': [], 'mac': [], 'x': [], 'y': [], 'error': [], 'rssi': [], 'floor_id': [], 'room_id': []
@@ -138,7 +133,7 @@ def init_refined_data_file(floor_ids: list) -> None:
     df_refined.to_csv('../data/data_refined.csv', index=False, header=True)
 
 
-def get_floor_ids() -> list:
+def get_floor_ids_from_dir() -> list:
     '''
     Retrieve the list of floor IDs from the floorplans directory.
     
@@ -182,12 +177,12 @@ def get_floor_offset(building_id: int) -> list:
     return offset
 
 
-def generate_room_geometries(data_workspace: dict, offset: list) -> tuple:
+def generate_room_geometries(data_workspace: list, offset: list) -> tuple:
     '''
     Generate the room geometries and floor tree for a floor.
     
     Args:
-        data_workspace (dict): Workspace data of the floor.
+        data_workspace (list): Workspace data of the floor.
         offset (list): Offset of the floor.
         
     Returns:

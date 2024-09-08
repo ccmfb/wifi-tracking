@@ -84,9 +84,12 @@ def get_refined_data(devices_in_batch: dict, timestamp: int, zValue_to_pValue: d
 
         device.update_position(zValue_to_pValue)
 
-        floor_id = device.floor_ids[-1]
+        floor_id = int(device.floor_ids[-1])
+        if floor_id not in floor_trees.keys():
+            continue
+
         floor_tree = floor_trees[floor_id]
-        room_ids = np.array(floorId_to_roomIds[floor_id])
+        room_ids = np.array(floorId_to_roomIds[str(floor_id)])
 
         point = Point(device.x, device.y)
         matches = room_ids.take(floor_tree.query(point))

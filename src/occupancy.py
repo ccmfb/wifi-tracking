@@ -1,6 +1,8 @@
 import json
 import time
 
+from api_requests import API_Requests
+
 import pandas as pd
 from tqdm import tqdm
 
@@ -18,6 +20,13 @@ def generate_occupancy_data(dataframe: pd.DataFrame) -> None:
         batches.append(batch)
 
     department_mappings = get_department_mappings()
+    api = API_Requests()
+
+    floor_infos = {}
+    floor_workspaces = {}
+    for floor_id in tqdm(dataframe['floor_id'].unique()):
+        floor_infos[floor_id] = api.get_floor_info(floor_id)
+        floor_workspaces[floor_id] = api.get_floor_workspace_info(floor_id)
 
     data = init_data()
     for batch in tqdm(batches):
@@ -29,8 +38,8 @@ def generate_occupancy_data(dataframe: pd.DataFrame) -> None:
             room = batch[batch['room_id'] == room_id]
             floor_id = room['floor_id'].to_list()[0]
 
-            floor_info = get_floor_info(floor_id)
-            floor_workspace = get_floor_workspace(floor_id)
+            floor_info = floor_infos[floor_id]
+            floor_workspace = floor_workspaces[floor_id]
             floor_workspace = {item['id']: item for item in floor_workspace}
 
             data['timestamp'].append(room['timestamp'].to_list()[0])
@@ -134,44 +143,6 @@ def room_valid(batch: pd.DataFrame, room_id: int) -> bool:
         return False
 
     return True
-
-
-def get_floor_info(floor_id: int) -> dict:
-    '''
-    Get the info.json file for the floor.
-    
-    Args:
-        floor_id (int): Floor ID.
-        
-    Returns:
-        dict: Floor information.
-    '''
-
-    path_floorInfo = f'{PATH_FLOORPLANS}/floors_by_id/{floor_id}/info.json'
-
-    with open(path_floorInfo, 'r') as file:
-        floor_info = json.load(file)
-
-    return floor_info
-
-
-def get_floor_workspace(floor_id: int) -> dict:
-    '''
-    Get the workspace.json file for the floor.
-    
-    Args:
-        floor_id (int): Floor ID.
-        
-    Returns:
-        dict: Floor workspace.
-    '''
-
-    path_floorWorkspace = f'{PATH_FLOORPLANS}/floors_by_id/{floor_id}/workspace.json'
-
-    with open(path_floorWorkspace, 'r') as file:
-        floor_workspace = json.load(file)
-
-    return floor_workspace
 
 
 def convert_timestamp_to_dateTime(timestamp: int) -> str:
