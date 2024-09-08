@@ -1,154 +1,266 @@
-'''
-Script to generate occupancy data from the refined data.
-'''
-
-import time
 import json
+import time
 
 import pandas as pd
 from tqdm import tqdm
 
 
-with open('../data/id_mappings/floorId_to_roomIds.json', 'r') as file:
-    floorId_to_roomIds = json.load(file)
-
-df = pd.read_csv('../data/data_refined.csv')
-timestamps_unique = df['timestamp'].unique()
+PATH_FLOORPLANS = '../data/floorplans-main'
 
 
-batches = []
-for timestamp in timestamps_unique:
-    batch = df[df['timestamp'] == timestamp]
-    batches.append(batch)
+def generate_occupancy_data(dataframe: pd.DataFrame) -> None:
+
+    # splits data into batches
+    batches = []
+    unique_timestamps = dataframe['timestamp'].unique()
+    for timestamp in unique_timestamps:
+        batch = dataframe[dataframe['timestamp'] == timestamp]
+        batches.append(batch)
+
+    department_mappings = get_department_mappings()
+
+    data = init_data()
+    for batch in tqdm(batches):
+        room_ids = batch['room_id'].unique()
+
+        for room_id in room_ids:
+            if room_valid(batch, room_id) == False: continue
+
+            room = batch[batch['room_id'] == room_id]
+            floor_id = room['floor_id'].to_list()[0]
+
+            floor_info = get_floor_info(floor_id)
+            floor_workspace = get_floor_workspace(floor_id)
+            floor_workspace = {item['id']: item for item in floor_workspace}
+
+            data['timestamp'].append(room['timestamp'].to_list()[0])
+            data['date_time'].append(convert_timestamp_to_dateTime(room['timestamp'].to_list()[0]))
+            data['num_devices'].append(len(room))
+
+            # room info
+            data['room_id'].append(room_id)
+            data['room_uid'].append(floor_workspace[room_id]['uid'])
+            data['room_name'].append(floor_workspace[room_id]['name'])
+            data['room_popular_name'].append(floor_workspace[room_id]['popularName'])
+            data['room_gross_area'].append(floor_workspace[room_id]['grossarea'])
+            data['room_net_area'].append(floor_workspace[room_id]['netarea'])
+            data['room_type_id'].append(floor_workspace[room_id]['typeId'])
+            data['room_type_name'].append(floor_workspace[room_id]['typeName'])
+
+            # floor info
+            data['floor_id'].append(floor_id)
+            data['floor_uid'].append(floor_info['uid'])
+            data['floor_name'].append(floor_info['name'])
+            data['floor_popular_name'].append(floor_info['popularName'])
+
+            # building info
+            data['building_id'].append(floor_info['buildingId'])
+            data['building_uid'].append(floor_info['buildingUid'])
+            data['building_name'].append(floor_info['buildingName'])
+            data['building_popular_name'].append(floor_info['buildingPopularName'])
+
+            # room owner info
+            if 'ownerId' not in floor_workspace[room_id] or floor_workspace[room_id]['ownerId'] is None:
+                data = add_no_owner_data(data)
+            else: 
+                data = add_owner_data(data, floor_workspace, department_mappings, room_id)
 
 
-data_timestamp = []
-data_count = []
-
-data_room_id = []
-data_room_uid = []
-data_room_name = []
-data_room_popular_name = []
-data_room_gross_area = []
-data_room_net_area = []
-data_room_type_id = []
-data_room_type_name = []
-data_room_owner_id = []
-data_room_owner_code = []
-data_rooom_owner_name = []
-
-data_floor_id = []
-data_floor_uid = []
-data_floor_name = []
-data_floor_popular_name = []
-
-data_building_id = []
-data_building_uid = []
-data_building_name = []
-data_building_popular_name = []
+    occupancy = pd.DataFrame(data)
+    occupancy.to_csv('../data/occupancy.csv', index=False)
 
 
-for batch in tqdm(batches):
-    room_ids = batch['room_id'].unique()
+def init_data() -> dict:
+    data = {}
 
-    for room_id in room_ids:
-        if room_id == 'None': continue
+    data['timestamp'] = []
+    data['date_time'] = []
+    data['num_devices'] = []
 
-        room = batch[batch['room_id'] == room_id]
-        count = len(room)
-        if count == 0: continue
+    # room info
+    data['room_id'] = []
+    data['room_uid'] = []
+    data['room_name'] = []
+    data['room_popular_name'] = []
+    data['room_gross_area'] = []
+    data['room_net_area'] = []
+    data['room_type_id'] = []
+    data['room_type_name'] = []
 
-        timestamp = room['timestamp'].to_list()[0]
-        floor_id = room['floor_id'].to_list()[0]
+    # floor info
+    data['floor_id'] = []
+    data['floor_uid'] = []
+    data['floor_name'] = []
+    data['floor_popular_name'] = []
 
-        path_floor_info = f'../data/floorplans-main/floors_by_id/{floor_id}/info.json'
-        with open(path_floor_info, 'r') as file:
-            floor_info = json.load(file)
+    # building info
+    data['building_id'] = []
+    data['building_uid'] = []
+    data['building_name'] = []
+    data['building_popular_name'] = []
 
-        building_id = floor_info['buildingId']
-        building_uid = floor_info['buildingUid']
-        building_name = floor_info['buildingName']
-        building_popular_name = floor_info['buildingPopularName']
+    # room owner info
+    data['room_owner_sub_department_id'] = []
+    data['room_owner_sub_department_code'] = []
+    data['room_owner_sub_department_name'] = []
 
-        floor_name = floor_info['name']
-        floor_popular_name = floor_info['popularName']
-        floor_uid = floor_info['uid']
+    data['room_owner_department_id'] = []
+    data['room_owner_department_code'] = []
+    data['room_owner_department_name'] = []
 
-        path_floor_workspaces = f'../data/floorplans-main/floors_by_id/{floor_id}/workspace.json'
-        with open(path_floor_workspaces, 'r') as file:
-            floor_workspaces = json.load(file)
+    data['room_owner_faculty_id'] = []
+    data['room_owner_faculty_code'] = []
+    data['room_owner_faculty_name'] = []
 
-        workspace_data = None
-        for workspace in floor_workspaces:
-            if workspace['id'] == room_id:
-                workspace_data = workspace
-                break
-
-        room_uid = workspace_data['uid']
-        room_name = workspace_data['name']
-        room_popular_name = workspace_data['popularName']
-        room_gross_area = workspace_data['grossarea']
-        room_net_area = workspace_data['netarea']
-        room_type_id = workspace_data['typeId']
-        room_type_name = workspace_data['typeName']
-        # check if owner is present
-        if 'ownerId' in workspace_data:
-            room_owner_id = workspace_data['ownerId']
-            room_owner_code = workspace_data['ownerCode']
-            room_owner_name = workspace_data['ownerName']
+    return data
 
 
-        data_timestamp.append(int(timestamp))
-        data_count.append(count)
+def room_valid(batch: pd.DataFrame, room_id: int) -> bool:
+    '''
+    Check if the room is valid.
+    
+    Args:
+        room_id (int): Room ID.
+        
+    Returns:
+        bool: True if the room is valid, False otherwise.
+    '''
 
-        data_room_id.append(int(room_id))
-        data_room_uid.append(room_uid)
-        data_room_name.append(room_name)
-        data_room_popular_name.append(room_popular_name)
-        data_room_gross_area.append(room_gross_area)
-        data_room_net_area.append(room_net_area)
-        data_room_type_id.append(room_type_id)
-        data_room_type_name.append(room_type_name)
-        data_room_owner_id.append(room_owner_id)
-        data_room_owner_code.append(room_owner_code)
-        data_rooom_owner_name.append(room_owner_name)
+    if room_id == 'None':
+        return False
 
-        data_floor_id.append(int(floor_id))
-        data_floor_uid.append(floor_uid)
-        data_floor_name.append(floor_name)
-        data_floor_popular_name.append(floor_popular_name)
+    room = batch[batch['room_id'] == room_id]
+    if len(room) == 0:
+        return False
 
-        data_building_id.append(int(building_id))
-        data_building_uid.append(building_uid)
-        data_building_name.append(building_name)
-        data_building_popular_name.append(building_popular_name)
+    return True
 
-date_time = [time.strftime('%d/%m/%Y %H:%M:%S', time.localtime(ts)) for ts in data_timestamp]
 
-data = {
-    'timestamp': data_timestamp,
-    'date_time': date_time,
-    'count': data_count,
-    'room_id': data_room_id,
-    'room_uid': data_room_uid,
-    'room_name': data_room_name,
-    'room_popular_name': data_room_popular_name,
-    'room_gross_area': data_room_gross_area,
-    'room_net_area': data_room_net_area,
-    'room_type_id': data_room_type_id,
-    'room_type_name': data_room_type_name,
-    'room_owner_id': data_room_owner_id,
-    'room_owner_code': data_room_owner_code,
-    'room_owner_name': data_rooom_owner_name,
-    'floor_id': data_floor_id,
-    'floor_uid': data_floor_uid,
-    'floor_name': data_floor_name,
-    'floor_popular_name': data_floor_popular_name,
-    'building_id': data_building_id,
-    'building_uid': data_building_uid,
-    'building_name': data_building_name,
-    'building_popular_name': data_building_popular_name
-}
+def get_floor_info(floor_id: int) -> dict:
+    '''
+    Get the info.json file for the floor.
+    
+    Args:
+        floor_id (int): Floor ID.
+        
+    Returns:
+        dict: Floor information.
+    '''
 
-occupancy = pd.DataFrame(data)
-occupancy.to_csv('../data/occupancy.csv', index=False)
+    path_floorInfo = f'{PATH_FLOORPLANS}/floors_by_id/{floor_id}/info.json'
+
+    with open(path_floorInfo, 'r') as file:
+        floor_info = json.load(file)
+
+    return floor_info
+
+
+def get_floor_workspace(floor_id: int) -> dict:
+    '''
+    Get the workspace.json file for the floor.
+    
+    Args:
+        floor_id (int): Floor ID.
+        
+    Returns:
+        dict: Floor workspace.
+    '''
+
+    path_floorWorkspace = f'{PATH_FLOORPLANS}/floors_by_id/{floor_id}/workspace.json'
+
+    with open(path_floorWorkspace, 'r') as file:
+        floor_workspace = json.load(file)
+
+    return floor_workspace
+
+
+def convert_timestamp_to_dateTime(timestamp: int) -> str:
+    '''
+    Convert timestamp to readable format.
+
+    Args:
+        timestamp (int): Timestamp.
+
+    Returns:
+        str: Datetime.
+    '''
+    return time.strftime('%d/%m/%Y %H:%M:%S', time.localtime(timestamp))
+    
+
+def get_department_mappings() -> dict:
+    '''
+    Get the department mappings for sub-departments, departments, and faculties.
+
+    Returns:
+        department_mappings (dict): Dictionary of department mappings.
+    '''
+
+    with open('../data/id_mappings/department_mappings.json', 'r') as file:
+        department_mappings = json.load(file)
+
+    return department_mappings
+
+
+def add_owner_data(data: dict, floor_workspace: dict, department_mappings: dict, room_id: int) -> dict:
+    ''''
+    Add owner data to the dictionary.
+    
+    Args:
+        data (dict): Dictionary.
+        
+    Returns:
+        dict: Dictionary with owner data.
+    '''
+
+    owner_id = str(floor_workspace[room_id]['ownerId'])
+    tree_lvl = department_mappings[owner_id]['treeLevel']
+    assert tree_lvl == 2
+
+    data['room_owner_sub_department_id'].append(floor_workspace[room_id]['ownerId'])
+    data['room_owner_sub_department_code'].append(floor_workspace[room_id]['ownerCode'])
+    data['room_owner_sub_department_name'].append(floor_workspace[room_id]['ownerName'])
+
+    organisation_path = department_mappings[owner_id]['path'].split('/')
+    department_id = organisation_path[-2]
+    faculty_id = organisation_path[-3]
+
+    data['room_owner_department_id'].append(department_id)
+    data['room_owner_department_code'].append(department_mappings[department_id]['code'])
+    data['room_owner_department_name'].append(department_mappings[department_id]['name'])
+
+    data['room_owner_faculty_id'].append(faculty_id)
+    data['room_owner_faculty_code'].append(department_mappings[faculty_id]['code'])
+    data['room_owner_faculty_name'].append(department_mappings[faculty_id]['name'])
+
+    return data
+
+
+def add_no_owner_data(data: dict) -> dict:
+    '''
+    Add no owner data to the dictionary.
+    
+    Args:
+        data (dict): Dictionary.
+        
+    Returns:
+        dict: Dictionary with no owner data.
+    '''
+
+    data['room_owner_sub_department_id'].append('None')
+    data['room_owner_sub_department_code'].append('None')
+    data['room_owner_sub_department_name'].append('None')
+
+    data['room_owner_department_id'].append('None')
+    data['room_owner_department_code'].append('None')
+    data['room_owner_department_name'].append('None')
+
+    data['room_owner_faculty_id'].append('None')
+    data['room_owner_faculty_code'].append('None')
+    data['room_owner_faculty_name'].append('None')
+
+    return data
+
+
+if __name__ == '__main__':
+    df = pd.read_csv('../data/data_refined.csv')
+    generate_occupancy_data(df)

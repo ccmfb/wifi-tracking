@@ -3,6 +3,8 @@ import pickle
 import json
 import yaml
 
+from api_requests import API_Requests
+
 from tqdm import tqdm
 from shapely.geometry import Polygon
 from shapely.strtree import STRtree
@@ -14,13 +16,15 @@ PATH_FLOORPLANS = '../data/floorplans-main'
 
 def init() -> None:
     floor_ids = get_floor_ids()
+    api = API_Requests()
 
-    generate_saved_objects(floor_ids)
-    generate_id_mappings(floor_ids)
-    generate_refined_data_file(floor_ids)
-    
+    init_saved_objects(floor_ids)
+    init_floor_to_rooms_mapping(floor_ids)
+    init_department_mappings(api)
+    init_refined_data_file(floor_ids)
 
-def generate_saved_objects(floor_ids: list) -> None:
+
+def init_saved_objects(floor_ids: list) -> None:
     '''
     Generate and save the room geometries and floor trees for each floor.
     
@@ -44,6 +48,9 @@ def generate_saved_objects(floor_ids: list) -> None:
         with open(path_floorInfo, 'r') as file:
             data_info = json.load(file)
 
+        # data_workspace = get_data_workspace(floor_id)
+        # data_info = get_data_info(floor_id)
+
         building_id = int(data_info['buildingId'])
         offset = get_floor_offset(building_id)
         
@@ -60,7 +67,7 @@ def generate_saved_objects(floor_ids: list) -> None:
         pickle.dump(floor_trees, file)
 
 
-def generate_id_mappings(floor_ids: list) -> None:
+def init_floor_to_rooms_mapping(floor_ids: list) -> None:
     '''
     Generate and save the mapping of floor IDs to room IDs.
     
@@ -84,9 +91,35 @@ def generate_id_mappings(floor_ids: list) -> None:
 
     with open(f'../data/id_mappings/floorId_to_roomIds.json', 'w') as file:
         json.dump(floorId_to_roomIds, file)
+
+
+def init_department_mappings(api: API_Requests) -> None:
+    '''
+    Map sub-departments to their parent departments and faculties.
+    
+    Args:
+        api (API_Requests): API_Requests object.
+        
+    Returns:
+        department_mappings (dict): Dictionary of department mappings.
+    '''
+
+    organisations = api.get_organisations()
+
+    department_mappings = {}
+    for org in organisations:
+        department_mappings[org['id']] = {
+            'name': org['name'],
+            'code': org['code'],
+            'treeLevel': org['treeLevel'],
+            'path': org['path'],
+        }
+
+    with open(f'../data/id_mappings/department_mappings.json', 'w') as file:
+        json.dump(department_mappings, file)
     
 
-def generate_refined_data_file(floor_ids: list) -> None:
+def init_refined_data_file(floor_ids: list) -> None:
     '''
     Generate and save the empty refined data file.
     
