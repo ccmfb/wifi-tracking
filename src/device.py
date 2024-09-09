@@ -1,6 +1,7 @@
+import bisect
+
 import numpy as np
 import scipy.stats as stats
-import bisect
 
 
 WIFI_ERROR = 10
@@ -113,6 +114,10 @@ class Device:
                 prev_error = WIFI_ERROR
             else:
                 prev_error = error_estimate
+
+            # Break to only include the most recent 10 data points
+            if i == 10:
+                break
 
         self.x = prev_x
         self.y = prev_y
