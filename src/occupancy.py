@@ -1,5 +1,6 @@
 import json
 import time
+import sqlite3
 
 from api_requests import API_Requests
 
@@ -34,6 +35,7 @@ def generate_occupancy_data(dataframe: pd.DataFrame) -> None:
 
         for room_id in room_ids:
             if room_valid(batch, room_id) == False: continue
+            room_id = int(room_id)
 
             room = batch[batch['room_id'] == room_id]
             floor_id = room['floor_id'].to_list()[0]
@@ -74,9 +76,56 @@ def generate_occupancy_data(dataframe: pd.DataFrame) -> None:
             else: 
                 data = add_owner_data(data, floor_workspace, department_mappings, room_id)
 
+    data = [data[key] for key in data.keys()]
+    data = list(map(list, zip(*data)))
 
-    occupancy = pd.DataFrame(data)
-    occupancy.to_csv('../data/occupancy.csv', index=False)
+    conn = sqlite3.connect('../data/occupancy.db')
+    cursor = conn.cursor()
+
+    cursor.execute('''
+    CREATE TABLE IF NOT EXISTS occupancy (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        timestamp INTEGER,
+        date_time TEXT,
+        num_devices INTEGER,
+        room_id TEXT,
+        room_uid TEXT,
+        room_name TEXT,
+        room_popular_name TEXT,
+        room_gross_area REAL,
+        room_net_area REAL,
+        room_type_id INTEGER,
+        room_type_name TEXT,
+        floor_id TEXT,
+        floor_uid TEXT,
+        floor_name TEXT,
+        floor_popular_name TEXT,
+        building_id TEXT,
+        building_uid TEXT,
+        building_name TEXT,
+        building_popular_name TEXT,
+        room_owner_sub_department_id INTEGER,
+        room_owner_sub_department_code TEXT,
+        room_owner_sub_department_name TEXT,
+        room_owner_department_id INTEGER,
+        room_owner_department_code TEXT,
+        room_owner_department_name TEXT,
+        room_owner_faculty_id INTEGER,
+        room_owner_faculty_code TEXT,
+        room_owner_faculty_name TEXT
+    )
+    ''')
+
+    cursor.executemany(
+        "INSERT INTO occupancy (timestamp, date_time, num_devices, room_id, room_uid, room_name, room_popular_name, room_gross_area, room_net_area, room_type_id, room_type_name, floor_id, floor_uid, floor_name, floor_popular_name, building_id, building_uid, building_name, building_popular_name, room_owner_sub_department_id, room_owner_sub_department_code, room_owner_sub_department_name, room_owner_department_id, room_owner_department_code, room_owner_department_name, room_owner_faculty_id, room_owner_faculty_code, room_owner_faculty_name) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)",
+        data
+    )
+
+    conn.commit()
+    conn.close()
+
+    # occupancy = pd.DataFrame(data)
+    # occupancy.to_csv('../data/occupancy.csv', index=False)
 
 
 def init_data() -> dict:
@@ -124,7 +173,7 @@ def init_data() -> dict:
     return data
 
 
-def room_valid(batch: pd.DataFrame, room_id: int) -> bool:
+def room_valid(batch: pd.DataFrame, room_id: str) -> bool:
     '''
     Check if the room is valid.
     
@@ -138,6 +187,7 @@ def room_valid(batch: pd.DataFrame, room_id: int) -> bool:
     if room_id == 'None':
         return False
 
+    room_id = int(room_id)
     room = batch[batch['room_id'] == room_id]
     if len(room) == 0:
         return False
@@ -232,6 +282,30 @@ def add_no_owner_data(data: dict) -> dict:
     return data
 
 
+def retrieve_data_from_db() -> pd.DataFrame:
+    '''
+    Retrieve data from the database.
+
+    Returns:
+        pd.DataFrame: Data.
+    '''
+
+    conn = sqlite3.connect('../data/refined_data.db')
+    cursor = conn.cursor()
+
+    cursor.execute("SELECT * FROM data_refined")
+    column_names = [description[0] for description in cursor.description]
+    rows = cursor.fetchall()
+
+    data = pd.DataFrame(rows, columns=column_names)
+
+    conn.close()
+
+    return data
+
+
 if __name__ == '__main__':
-    df = pd.read_csv('../data/data_refined.csv')
+    #df = pd.read_csv('../data/data_refined.csv')
+    df = retrieve_data_from_db()
+    print(df.head())
     generate_occupancy_data(df)

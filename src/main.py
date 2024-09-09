@@ -4,6 +4,7 @@ import pickle
 
 from device import Device
 
+import sqlite3
 from tqdm import tqdm
 import pandas as pd
 import numpy as np
@@ -45,9 +46,27 @@ def generate_refined_data(batch: pd.DataFrame, first_batch: bool = False) -> Non
     data = get_refined_data(devices_in_batch, timestamp, zValue_to_pValue, floorId_to_roomIds, room_geometries, floor_trees)
 
     # Write to file
-    with open('../data/data_refined.csv', 'a', newline='') as file:
-        writer = csv.writer(file)
-        writer.writerows(data)
+    conn = sqlite3.connect('../data/refined_data.db')
+    cursor = conn.cursor()
+
+    cursor.execute('''
+    CREATE TABLE IF NOT EXISTS data_refined (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        timestamp INTEGER,
+        mac TEXT,
+        x REAL,
+        y REAL,
+        error REAL,
+        rssi INTEGER,
+        floor_id TEXT,
+        room_id TEXT
+    )
+    ''')
+
+    cursor.executemany("INSERT INTO data_refined (timestamp, mac, x, y, error, rssi, floor_id, room_id) VALUES (?, ?, ?, ?, ?, ?, ?, ?)", data)
+
+    conn.commit()
+    conn.close()
 
     # Save recent devices
     save_recent_devices(recent_devices, devices_in_batch, timestamp)
@@ -106,8 +125,8 @@ def get_refined_data(devices_in_batch: dict, timestamp: int, zValue_to_pValue: d
         data_y.append(device.y)
         data_error.append(device.error)
         data_rssi.append(device.rssi_values[-1])
-        data_floor_id.append(floor_id)
-        data_room_id.append(room_id)
+        data_floor_id.append(str(floor_id))
+        data_room_id.append(str(room_id))
 
     data = [
         data_timestamps,
@@ -120,6 +139,7 @@ def get_refined_data(devices_in_batch: dict, timestamp: int, zValue_to_pValue: d
         data_room_id
     ]
     data = list(map(list, zip(*data)))
+    print(data[:5])
 
     return data
 
