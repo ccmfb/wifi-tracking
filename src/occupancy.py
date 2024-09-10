@@ -12,6 +12,15 @@ PATH_FLOORPLANS = '../data/floorplans-main'
 
 
 def generate_occupancy_data(dataframe: pd.DataFrame) -> None:
+    '''
+    Uses the refined data to create 'room summaries' and enrich with pythagoras data.
+    
+    Args:
+        dataframe (pd.DataFrame): Data.
+        
+    Returns:
+        None
+    '''
 
     # splits data into batches
     batches = []
@@ -20,6 +29,7 @@ def generate_occupancy_data(dataframe: pd.DataFrame) -> None:
         batch = dataframe[dataframe['timestamp'] == timestamp]
         batches.append(batch)
 
+    # Loading additional data
     department_mappings = get_department_mappings()
     api = API_Requests()
 
@@ -29,7 +39,81 @@ def generate_occupancy_data(dataframe: pd.DataFrame) -> None:
         floor_infos[floor_id] = api.get_floor_info(floor_id)
         floor_workspaces[floor_id] = api.get_floor_workspace_info(floor_id)
 
+    # Populate the data
     data = init_data()
+    data = populate_data(data, batches, floor_infos, floor_workspaces, department_mappings)
+
+    # Add data to database
+    add_to_db(data)
+
+
+def init_data() -> dict:
+    '''
+    Initialize the data dictionary.
+    
+    Returns:
+        dict: Data.
+    '''
+
+    data = {}
+
+    data['timestamp'] = []
+    data['date_time'] = []
+    data['num_devices'] = []
+
+    # room info
+    data['room_id'] = []
+    data['room_uid'] = []
+    data['room_name'] = []
+    data['room_popular_name'] = []
+    data['room_gross_area'] = []
+    data['room_net_area'] = []
+    data['room_type_id'] = []
+    data['room_type_name'] = []
+
+    # floor info
+    data['floor_id'] = []
+    data['floor_uid'] = []
+    data['floor_name'] = []
+    data['floor_popular_name'] = []
+
+    # building info
+    data['building_id'] = []
+    data['building_uid'] = []
+    data['building_name'] = []
+    data['building_popular_name'] = []
+
+    # room owner info
+    data['room_owner_sub_department_id'] = []
+    data['room_owner_sub_department_code'] = []
+    data['room_owner_sub_department_name'] = []
+
+    data['room_owner_department_id'] = []
+    data['room_owner_department_code'] = []
+    data['room_owner_department_name'] = []
+
+    data['room_owner_faculty_id'] = []
+    data['room_owner_faculty_code'] = []
+    data['room_owner_faculty_name'] = []
+
+    return data
+
+
+def populate_data(data: dict, batches: list, floor_infos: dict, floor_workspaces: dict, department_mappings: dict) -> list:
+    '''
+    Populates the data dictionary.
+
+    Args:
+        data (dict): Dictionary.
+        batches (list): List of batches.
+        floor_infos (dict): Floor infos.
+        floor_workspaces (dict): Floor workspaces.
+        department_mappings (dict): Department mappings.
+
+    Returns:
+        list: Data.
+    '''
+
     for batch in tqdm(batches):
         room_ids = batch['room_id'].unique()
 
@@ -79,6 +163,20 @@ def generate_occupancy_data(dataframe: pd.DataFrame) -> None:
     data = [data[key] for key in data.keys()]
     data = list(map(list, zip(*data)))
 
+    return data
+
+
+def add_to_db(data: list) -> None:
+    '''
+    Add data to the database.
+    
+    Args:
+        data (list): Data.
+        
+    Returns:
+        None
+    '''
+
     conn = sqlite3.connect('../data/occupancy.db')
     cursor = conn.cursor()
 
@@ -123,54 +221,6 @@ def generate_occupancy_data(dataframe: pd.DataFrame) -> None:
 
     conn.commit()
     conn.close()
-
-    # occupancy = pd.DataFrame(data)
-    # occupancy.to_csv('../data/occupancy.csv', index=False)
-
-
-def init_data() -> dict:
-    data = {}
-
-    data['timestamp'] = []
-    data['date_time'] = []
-    data['num_devices'] = []
-
-    # room info
-    data['room_id'] = []
-    data['room_uid'] = []
-    data['room_name'] = []
-    data['room_popular_name'] = []
-    data['room_gross_area'] = []
-    data['room_net_area'] = []
-    data['room_type_id'] = []
-    data['room_type_name'] = []
-
-    # floor info
-    data['floor_id'] = []
-    data['floor_uid'] = []
-    data['floor_name'] = []
-    data['floor_popular_name'] = []
-
-    # building info
-    data['building_id'] = []
-    data['building_uid'] = []
-    data['building_name'] = []
-    data['building_popular_name'] = []
-
-    # room owner info
-    data['room_owner_sub_department_id'] = []
-    data['room_owner_sub_department_code'] = []
-    data['room_owner_sub_department_name'] = []
-
-    data['room_owner_department_id'] = []
-    data['room_owner_department_code'] = []
-    data['room_owner_department_name'] = []
-
-    data['room_owner_faculty_id'] = []
-    data['room_owner_faculty_code'] = []
-    data['room_owner_faculty_name'] = []
-
-    return data
 
 
 def room_valid(batch: pd.DataFrame, room_id: str) -> bool:
@@ -269,41 +319,4 @@ def add_no_owner_data(data: dict) -> dict:
 
     data['room_owner_sub_department_id'].append('None')
     data['room_owner_sub_department_code'].append('None')
-    data['room_owner_sub_department_name'].append('None')
-
-    data['room_owner_department_id'].append('None')
-    data['room_owner_department_code'].append('None')
-    data['room_owner_department_name'].append('None')
-
-    data['room_owner_faculty_id'].append('None')
-    data['room_owner_faculty_code'].append('None')
-    data['room_owner_faculty_name'].append('None')
-
-    return data
-
-
-def retrieve_data_from_db() -> pd.DataFrame:
-    '''
-    Retrieve data from the database.
-
-    Returns:
-        pd.DataFrame: Data.
-    '''
-
-    conn = sqlite3.connect('../data/refined_data.db')
-    cursor = conn.cursor()
-
-    cursor.execute("SELECT * FROM data_refined")
-    column_names = [description[0] for description in cursor.description]
-    rows = cursor.fetchall()
-
-    data = pd.DataFrame(rows, columns=column_names)
-
-    conn.close()
-
-    return data
-
-
-if __name__ == '__main__':
-    df = retrieve_data_from_db()
-    generate_occupancy_data(df)
+    data['room_o

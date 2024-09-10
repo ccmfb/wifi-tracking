@@ -18,7 +18,7 @@ ACTIVE_COUNT = 2 # If device is not at least seen 2 times, it is considered inac
 
 def generate_refined_data(batch: pd.DataFrame, first_batch: bool = False) -> None:
     '''
-    Generate refined data from the batch data.
+    Generate refined data from the batch data, i.e. the data with optimised accuracy and room information.
     
     Args:
         batch (pd.DataFrame): Batch data.
@@ -45,28 +45,8 @@ def generate_refined_data(batch: pd.DataFrame, first_batch: bool = False) -> Non
     timestamp = timestamps[-1]
     data = get_refined_data(devices_in_batch, timestamp, zValue_to_pValue, floorId_to_roomIds, room_geometries, floor_trees)
 
-    # Write to file
-    conn = sqlite3.connect('../data/refined_data.db')
-    cursor = conn.cursor()
-
-    cursor.execute('''
-    CREATE TABLE IF NOT EXISTS data_refined (
-        id INTEGER PRIMARY KEY AUTOINCREMENT,
-        timestamp INTEGER,
-        mac TEXT,
-        x REAL,
-        y REAL,
-        error REAL,
-        rssi INTEGER,
-        floor_id TEXT,
-        room_id TEXT
-    )
-    ''')
-
-    cursor.executemany("INSERT INTO data_refined (timestamp, mac, x, y, error, rssi, floor_id, room_id) VALUES (?, ?, ?, ?, ?, ?, ?, ?)", data)
-
-    conn.commit()
-    conn.close()
+    # Write to sqlite database
+    add_to_db(data)
 
     # Save recent devices
     save_recent_devices(recent_devices, devices_in_batch, timestamp)
@@ -180,6 +160,30 @@ def get_devices_in_batch(batch: pd.DataFrame, recent_devices: dict, mapId_to_flo
             devices_in_batch[current_device.mac] = current_device
 
     return devices_in_batch
+
+
+def add_to_db(data: list) -> None:
+    conn = sqlite3.connect('../data/refined_data.db')
+    cursor = conn.cursor()
+
+    cursor.execute('''
+    CREATE TABLE IF NOT EXISTS data_refined (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        timestamp INTEGER,
+        mac TEXT,
+        x REAL,
+        y REAL,
+        error REAL,
+        rssi INTEGER,
+        floor_id TEXT,
+        room_id TEXT
+    )
+    ''')
+
+    cursor.executemany("INSERT INTO data_refined (timestamp, mac, x, y, error, rssi, floor_id, room_id) VALUES (?, ?, ?, ?, ?, ?, ?, ?)", data)
+
+    conn.commit()
+    conn.close()
 
 
 def save_recent_devices(recent_devices: dict, devices_in_batch: dict, timestamp: int) -> None:

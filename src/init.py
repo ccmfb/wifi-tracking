@@ -15,13 +15,21 @@ PATH_FLOORPLANS = '../data/floorplans-main'
 
 
 def init() -> None:
+    '''
+    Initialise necessary files. These include: room geometries, floor trees, 
+    floor to room mappings, and department mappings. Can be run to update the 
+    files.
+
+    Returns:
+        None
+    '''
+
     api = API_Requests()
     floor_ids = api.get_floor_ids()
 
     init_saved_objects(floor_ids, api)
     init_floor_to_rooms_mapping(floor_ids, api)
     init_department_mappings(api)
-    init_refined_data_file(floor_ids)
 
     print('Initialising necessary files complete.')
 
@@ -68,6 +76,7 @@ def init_floor_to_rooms_mapping(floor_ids: list, api: API_Requests) -> None:
     
     Args:
         floor_ids (list): List of floor IDs.
+        api (API_Requests): API_Requests object.
         
     Returns:
         None
@@ -110,42 +119,6 @@ def init_department_mappings(api: API_Requests) -> None:
     with open(f'../data/id_mappings/department_mappings.json', 'w') as file:
         json.dump(department_mappings, file)
     
-
-def init_refined_data_file(floor_ids: list) -> None:
-    '''
-    Generate and save the empty refined data file.
-    
-    Args:
-        floor_ids (list): List of floor IDs.
-        
-    Returns:
-        None
-    '''
-    print('Generating refined data file...')
-
-    data_refined_columns = {
-        'timestamp': [], 'mac': [], 'x': [], 'y': [], 'error': [], 'rssi': [], 'floor_id': [], 'room_id': []
-    }
-
-    df_refined = pd.DataFrame(data_refined_columns)
-    df_refined.to_csv('../data/data_refined.csv', index=False, header=True)
-
-
-def get_floor_ids_from_dir() -> list:
-    '''
-    Retrieve the list of floor IDs from the floorplans directory.
-    
-    Returns:
-        floor_ids (list): List of floor IDs.
-    '''
-
-    path_floorsById = f'{PATH_FLOORPLANS}/floors_by_id'
-
-    all_entries = os.listdir(path_floorsById)
-    floor_ids = [entry for entry in all_entries if os.path.isdir(os.path.join(path_floorsById, entry))]
-
-    return floor_ids
-
 
 def get_floor_offset(building_id: int) -> list:
     '''
