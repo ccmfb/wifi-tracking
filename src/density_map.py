@@ -6,8 +6,10 @@ import numpy as np
 import pandas as pd
 from shapely.geometry import Polygon, Point
 from shapely.vectorized import contains, touches
+import matplotlib as mpl
 import matplotlib.pyplot as plt
 from matplotlib.colors import LinearSegmentedColormap
+mpl.use('Agg')
 
 
 MIN_DISPLAY_ERROR = 2
@@ -16,7 +18,7 @@ MAX_DISPLAY_ERROR = 10
 
 def get_density_image(floor_id, batch, plot_devices=False):
     batch = batch[batch['floor_id'] == floor_id]
-    batch = batch[~np.isnan(batch['room_id'])]
+    batch = batch[batch['room_id'] != 'None']
     batch = batch.reset_index(drop=True)
 
     rooms = get_rooms(floor_id)
@@ -45,10 +47,10 @@ def get_rooms(floor_id: int) -> list:
         list: A list of shapely Polygon objects.
     '''
 
-    with open('../../data/id_mappings/floorId_to_roomIds.json', 'r') as file:
+    with open('../data/id_mappings/floorId_to_roomIds.json', 'r') as file:
         floorId_to_roomIds = json.load(file)
 
-    with open('../../data/objects/room_geometries.pkl', 'rb') as file:
+    with open('../data/objects/room_geometries.pkl', 'rb') as file:
         room_geometries = pickle.load(file)
 
     room_ids = floorId_to_roomIds[str(floor_id)]
