@@ -139,7 +139,6 @@ def get_refined_data(devices_in_batch: dict, timestamp: int, zValue_to_pValue: d
         data_room_id
     ]
     data = list(map(list, zip(*data)))
-    print(data[:5])
 
     return data
 

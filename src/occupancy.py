@@ -305,7 +305,5 @@ def retrieve_data_from_db() -> pd.DataFrame:
 
 
 if __name__ == '__main__':
-    #df = pd.read_csv('../data/data_refined.csv')
     df = retrieve_data_from_db()
-    print(df.head())
     generate_occupancy_data(df)

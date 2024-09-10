@@ -50,8 +50,6 @@ def init_saved_objects(floor_ids: list, api: API_Requests) -> None:
         
         if offset is None:
             continue
-            # print('Warning: Offset not found for floor ', floor_id)
-            # offset = [0, 0]
 
         current_room_geometries, current_floor_tree = generate_room_geometries(data_workspace, offset)
         room_geometries.update(current_room_geometries)
