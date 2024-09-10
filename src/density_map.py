@@ -16,7 +16,25 @@ MIN_DISPLAY_ERROR = 2
 MAX_DISPLAY_ERROR = 10
 
 
-def get_density_image(floor_id, batch, plot_devices=False):
+def get_density_image(
+        batch: pd.DataFrame, 
+        floor_id: int, 
+        dpi: int = 100,
+        custom_colors: list = None,
+        alpha: float = 0.6,
+        plot_devices: bool = False) -> bytes:
+    '''
+    Generates a density map image based on the devices in the batch.
+
+    Args:
+        batch (pandas.DataFrame): The batch of devices.
+        floor_id (int): The floor id.
+        dpi (int): The DPI of the image.
+        custom_colors (list): Custom colors for the colormap, expects a list of three RGB values.
+        alpha (float): The alpha value of the density map.
+        plot_devices (bool): Whether to plot the devices.
+    '''
+
     batch = batch[batch['floor_id'] == floor_id]
     batch = batch[batch['room_id'] != 'None']
     batch = batch.reset_index(drop=True)
@@ -30,7 +48,17 @@ def get_density_image(floor_id, batch, plot_devices=False):
     density_map = mask_density_map(density_map, rooms, xx, yy)
 
     # Plotting
-    buffer = plot_density_map(density_map, xx, yy, rooms, batch, plot_devices=plot_devices)
+    buffer = plot_density_map(
+        density_map, 
+        xx, 
+        yy, 
+        rooms, 
+        batch, 
+        dpi=dpi,
+        custom_colors=custom_colors, 
+        alpha=alpha,
+        plot_devices=plot_devices
+    )
     image_bytes = buffer.getvalue()
 
     return image_bytes
@@ -171,7 +199,6 @@ def custom_colormap(
 
     colors = [(0, color1), (0.5, color2), (1, color3)]
     cmap = LinearSegmentedColormap.from_list('custom', colors)
-    cmap = 'coolwarm'
 
     return cmap
 
@@ -182,6 +209,9 @@ def plot_density_map(
         yy: np.ndarray, 
         rooms: list, 
         batch: pd.DataFrame, 
+        dpi: int = 100,
+        custom_colors: list = None,
+        alpha: float = 0.6,
         plot_devices: bool = False) -> BytesIO:
     '''
     Plots the density map.
@@ -192,16 +222,22 @@ def plot_density_map(
         yy (numpy.ndarray): The y coordinates.
         rooms (list): A list of shapely Polygon objects.
         batch (pandas.DataFrame): The batch of devices.
+        dpi (int): The DPI of the image.
+        custom_colors (list): Custom colors for the colormap, expects a list of three RGB values.
+        alpha (float): The alpha value of the density map.
         plot_devices (bool): Whether to plot the devices.
         
     Returns:
         BytesIO: The image buffer.
     '''
 
-    fig, ax = plt.subplots(figsize=(8, 8))
+    fig, ax = plt.subplots(figsize=(8, 8), dpi=dpi)
 
-    cmap = custom_colormap()
-    alpha = 0.6
+    if custom_colors is None:
+        cmap = 'coolwarm'
+    else:
+        cmap = custom_colormap(custom_colors[0], custom_colors[1], custom_colors[2])
+
     ax.contourf(xx, yy, density_map, cmap=cmap, alpha=alpha)
 
     for room in rooms:

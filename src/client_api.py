@@ -3,7 +3,7 @@ import sqlite3
 
 from density_map import get_density_image
 
-from flask import Flask, send_file
+from flask import Flask, send_file, request
 import pandas as pd
 
 
@@ -23,11 +23,37 @@ def get_density_map(floor_id):
         dict: Density map of the floor.
     '''
 
+    # Get query parameters
+    dpi = request.args.get('dpi', default=200, type=int)
+
+    color1 = request.args.get('color1', default='[100,0,0]')
+    color2 = request.args.get('color2', default='[0,100,0]')
+    color3 = request.args.get('color3', default='[0,0,100]')
+
+    color1 = color1.replace('[','').replace(']','').split(',')
+    color2 = color2.replace('[','').replace(']','').split(',')
+    color3 = color3.replace('[','').replace(']','').split(',')
+
+    color1 = [int(color) for color in color1]
+    color2 = [int(color) for color in color2]
+    color3 = [int(color) for color in color3]
+
+    custom_colors = [color1, color2, color3]
+    alpha = request.args.get('alpha', default=0.6, type=float)
+    plot_devices = request.args.get('plot_devices', default=False, type=bool)
+
     # Loading most recent batch
     batch = get_last_batch()
 
     # Getting the density map
-    density_map_bytes = get_density_image(floor_id=floor_id, batch=batch)
+    density_map_bytes = get_density_image(
+        floor_id=floor_id, 
+        batch=batch,
+        dpi=dpi,
+        custom_colors=custom_colors,
+        alpha=alpha,
+        plot_devices=plot_devices
+    )
 
     return send_file(
         io.BytesIO(density_map_bytes),
