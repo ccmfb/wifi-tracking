@@ -77,6 +77,8 @@ def init_data() -> dict:
     data['floor_name'] = []
     data['floor_popular_name'] = []
 
+    data['celcat_name'] = []
+
     # building info
     data['building_id'] = []
     data['building_uid'] = []
@@ -148,6 +150,11 @@ def populate_data(data: dict, batches: list, floor_infos: dict, floor_workspaces
             data['floor_name'].append(floor_info['name'])
             data['floor_popular_name'].append(floor_info['popularName'])
 
+            # celcat info
+            floor_name = floor_info['name']
+            room_name = floor_workspace[room_id]['name']
+            data['celcat_name'].append(f'{floor_name}-{room_name}')
+
             # building info
             data['building_id'].append(floor_info['buildingId'])
             data['building_uid'].append(floor_info['buildingUid'])
@@ -198,6 +205,7 @@ def add_to_db(data: list) -> None:
         floor_uid TEXT,
         floor_name TEXT,
         floor_popular_name TEXT,
+        celcat_name TEXT,
         building_id TEXT,
         building_uid TEXT,
         building_name TEXT,
@@ -215,7 +223,7 @@ def add_to_db(data: list) -> None:
     ''')
 
     cursor.executemany(
-        "INSERT INTO occupancy (timestamp, date_time, num_devices, room_id, room_uid, room_name, room_popular_name, room_gross_area, room_net_area, room_type_id, room_type_name, floor_id, floor_uid, floor_name, floor_popular_name, building_id, building_uid, building_name, building_popular_name, room_owner_sub_department_id, room_owner_sub_department_code, room_owner_sub_department_name, room_owner_department_id, room_owner_department_code, room_owner_department_name, room_owner_faculty_id, room_owner_faculty_code, room_owner_faculty_name) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)",
+        "INSERT INTO occupancy (timestamp, date_time, num_devices, room_id, room_uid, room_name, room_popular_name, celcat_name, room_gross_area, room_net_area, room_type_id, room_type_name, floor_id, floor_uid, floor_name, floor_popular_name, building_id, building_uid, building_name, building_popular_name, room_owner_sub_department_id, room_owner_sub_department_code, room_owner_sub_department_name, room_owner_department_id, room_owner_department_code, room_owner_department_name, room_owner_faculty_id, room_owner_faculty_code, room_owner_faculty_name) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)",
         data
     )
 

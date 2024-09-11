@@ -5,13 +5,26 @@ from density_map import get_density_image
 
 from flask import Flask, send_file, request
 import pandas as pd
+from dotenv import dotenv_values
 
 
 app = Flask(__name__)
+API_KEY = dotenv_values('../.env')['DENSITY_MAP_API_KEY']
 
+
+def require_api_key(f):
+    def decorator(*args, **kwargs):
+        # Get the key from the request headers
+        api_key = request.headers.get('x-api-key')
+        if api_key and api_key == API_KEY:
+            return f(*args, **kwargs)
+        else:
+            return jsonify({"error": "Invalid or missing API key"}), 403
+    return decorator
 
 
 @app.route('/density_map/<int:floor_id>/', methods=['GET'])
+@require_api_key
 def get_density_map(floor_id):
     '''
     Get the density map of a floor.
@@ -60,7 +73,6 @@ def get_density_map(floor_id):
         mimetype='image/png',
         as_attachment=False,
     )
-
 
 
 def get_last_batch() -> pd.DataFrame:
