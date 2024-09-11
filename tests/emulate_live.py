@@ -14,6 +14,7 @@ import pandas as pd
     #exec(code)
 
 
+print('Reading data...')
 df = pd.read_csv('../data/data.csv')
 df = df.sort_values(by='timestamp', ascending=True)
 df = df.reset_index(drop=True)
@@ -23,6 +24,7 @@ df.head()
 timestamps = df['timestamp'].to_numpy()
 cutoff_indices = [0]
 
+print('timestamping')
 prev_timestamp = timestamps[0]
 for i, timestamp in enumerate(timestamps):
 
@@ -30,8 +32,8 @@ for i, timestamp in enumerate(timestamps):
         cutoff_indices.append(i)
         prev_timestamp = timestamp
 
-    if len(cutoff_indices) == 6*6*1:
-        break
+    #if len(cutoff_indices) == 6*6*1:
+        #break
 
 #print(cutoff_indices)
 batches = []

@@ -319,4 +319,41 @@ def add_no_owner_data(data: dict) -> dict:
 
     data['room_owner_sub_department_id'].append('None')
     data['room_owner_sub_department_code'].append('None')
-    data['room_o
+    data['room_owner_sub_department_name'].append('None')
+
+    data['room_owner_department_id'].append('None')
+    data['room_owner_department_code'].append('None')
+    data['room_owner_department_name'].append('None')
+
+    data['room_owner_faculty_id'].append('None')
+    data['room_owner_faculty_code'].append('None')
+    data['room_owner_faculty_name'].append('None')
+
+    return data
+
+
+def retrieve_data_from_db() -> pd.DataFrame:
+    '''
+    Retrieve data from the database.
+
+    Returns:
+        pd.DataFrame: Data.
+    '''
+
+    conn = sqlite3.connect('../data/refined_data.db')
+    cursor = conn.cursor()
+
+    cursor.execute("SELECT * FROM data_refined")
+    column_names = [description[0] for description in cursor.description]
+    rows = cursor.fetchall()
+
+    data = pd.DataFrame(rows, columns=column_names)
+
+    conn.close()
+
+    return data
+
+
+if __name__ == '__main__':
+    df = retrieve_data_from_db()
+    generate_occupancy_data(df)
