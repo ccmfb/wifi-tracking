@@ -3,7 +3,7 @@ import pickle
 import json
 import yaml
 
-from api_requests import API_Requests
+from pythagoras_api import Pythagoras_API
 
 from tqdm import tqdm
 from shapely.geometry import Polygon
@@ -24,7 +24,7 @@ def init() -> None:
         None
     '''
 
-    api = API_Requests()
+    api = Pythagoras_API()
     floor_ids = api.get_floor_ids()
 
     init_saved_objects(floor_ids, api)
@@ -34,7 +34,7 @@ def init() -> None:
     print('Initialising necessary files complete.')
 
 
-def init_saved_objects(floor_ids: list, api: API_Requests) -> None:
+def init_saved_objects(floor_ids: list, api: Pythagoras_API) -> None:
     '''
     Generate and save the room geometries and floor trees for each floor.
     
@@ -70,7 +70,7 @@ def init_saved_objects(floor_ids: list, api: API_Requests) -> None:
         pickle.dump(floor_trees, file)
 
 
-def init_floor_to_rooms_mapping(floor_ids: list, api: API_Requests) -> None:
+def init_floor_to_rooms_mapping(floor_ids: list, api: Pythagoras_API) -> None:
     '''
     Generate and save the mapping of floor IDs to room IDs.
     
@@ -93,7 +93,7 @@ def init_floor_to_rooms_mapping(floor_ids: list, api: API_Requests) -> None:
         json.dump(floorId_to_roomIds, file)
 
 
-def init_department_mappings(api: API_Requests) -> None:
+def init_department_mappings(api: Pythagoras_API) -> None:
     '''
     Map sub-departments to their parent departments and faculties.
     

@@ -24,7 +24,7 @@ def require_api_key(f):
 
 
 @app.route('/density_map/<int:floor_id>/', methods=['GET'])
-@require_api_key
+#@require_api_key
 def get_density_map(floor_id):
     '''
     Get the density map of a floor.
@@ -37,6 +37,9 @@ def get_density_map(floor_id):
     '''
 
     # Get query parameters
+    mpl_cmap = request.args.get('mpl_cmap', default=None, type=str)
+    alpha = request.args.get('alpha', default=0.6, type=float)
+    plot_devices = request.args.get('plot_devices', default=False, type=bool)
     dpi = request.args.get('dpi', default=200, type=int)
 
     color1 = request.args.get('color1', default='[100,0,0]')
@@ -52,8 +55,6 @@ def get_density_map(floor_id):
     color3 = [int(color) for color in color3]
 
     custom_colors = [color1, color2, color3]
-    alpha = request.args.get('alpha', default=0.6, type=float)
-    plot_devices = request.args.get('plot_devices', default=False, type=bool)
 
     # Loading most recent batch
     batch = get_last_batch()
@@ -64,6 +65,7 @@ def get_density_map(floor_id):
         batch=batch,
         dpi=dpi,
         custom_colors=custom_colors,
+        mpl_cmap=mpl_cmap,
         alpha=alpha,
         plot_devices=plot_devices
     )

@@ -3,7 +3,7 @@ import requests
 from dotenv import dotenv_values
 
 
-class API_Requests:
+class Pythagoras_API:
     def __init__(self) -> None:
         config = dotenv_values("../.env")
 

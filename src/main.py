@@ -3,6 +3,7 @@ import json
 import pickle
 
 from device import Device
+from data_api import Data_API
 
 import sqlite3
 from tqdm import tqdm
@@ -32,24 +33,26 @@ def generate_refined_data(batch: pd.DataFrame, first_batch: bool = False) -> Non
 
     mapId_to_floorId = get_mapId_to_floorId()
     zValue_to_pValue = get_zValue_to_pValue()
-    recent_devices = get_recent_devices(first_batch)
+
     floorId_to_roomIds = get_floorId_to_roomIds()
     room_geometries = get_room_geometries()
     floor_trees = get_floor_trees()
 
+    # Get recent devices
+    recent_devices = get_recent_devices(first_batch)
     # Loading devices in batch
-    devices_in_batch = get_devices_in_batch(batch, recent_devices, mapId_to_floorId)
+    devices_in_batch, recent_devices = load_devices_in_batch(batch, recent_devices, mapId_to_floorId)
 
     # Populate data
     timestamps = batch['timestamp'].to_list()
-    timestamp = timestamps[-1]
+    timestamp = int(timestamps[-1])
     data = get_refined_data(devices_in_batch, timestamp, zValue_to_pValue, floorId_to_roomIds, room_geometries, floor_trees)
 
     # Write to sqlite database
     add_to_db(data)
 
     # Save recent devices
-    save_recent_devices(recent_devices, devices_in_batch, timestamp)
+    save_recent_devices(recent_devices, timestamp)
 
 
 def get_refined_data(devices_in_batch: dict, timestamp: int, zValue_to_pValue: dict, floorId_to_roomIds: dict, room_geometries: dict, floor_trees: dict) -> dict:
@@ -123,9 +126,9 @@ def get_refined_data(devices_in_batch: dict, timestamp: int, zValue_to_pValue: d
     return data
 
 
-def get_devices_in_batch(batch: pd.DataFrame, recent_devices: dict, mapId_to_floorId: dict) -> dict:
+def load_devices_in_batch(batch: pd.DataFrame, recent_devices: dict, mapId_to_floorId: dict) -> tuple:
     '''
-    Get devices in the batch.
+    Returns list of devices in batch as well as updated recent devices.
     
     Args:
         batch (pd.DataFrame): Batch data.
@@ -137,29 +140,32 @@ def get_devices_in_batch(batch: pd.DataFrame, recent_devices: dict, mapId_to_flo
     '''
 
     devices_in_batch = {}
+    rec_devices = recent_devices.copy()
+
     for i in range(len(batch)):
 
-        if batch['mac'][i] not in recent_devices:
-            recent_devices[batch['mac'][i]] = Device(batch['mac'][i])
-
-        current_device = recent_devices[batch['mac'][i]]
         if batch['map_id'][i] not in mapId_to_floorId:
             print(f'Floor not found for mapId {batch["map_id"][i]}')
             continue
 
+        if batch['mac'][i] not in rec_devices:
+            rec_devices[batch['mac'][i]] = Device(batch['mac'][i])
+
+        current_device = rec_devices[batch['mac'][i]]
+
         floor_id = mapId_to_floorId[batch['map_id'][i]]
         current_device.add_data(
-            batch['x'][i],
-            batch['y'][i],
-            batch['rssi'][i],
-            batch['timestamp'][i],
-            floor_id
+            float(batch['x'][i]),
+            float(batch['y'][i]),
+            float(batch['rssi'][i]),
+            int(batch['timestamp'][i]),
+            int(floor_id)
         )
 
         if current_device.mac not in devices_in_batch:
             devices_in_batch[current_device.mac] = current_device
 
-    return devices_in_batch
+    return devices_in_batch, rec_devices 
 
 
 def add_to_db(data: list) -> None:
@@ -186,20 +192,18 @@ def add_to_db(data: list) -> None:
     conn.close()
 
 
-def save_recent_devices(recent_devices: dict, devices_in_batch: dict, timestamp: int) -> None:
+def save_recent_devices(recent_devices: dict, timestamp: int) -> None:
     '''
-    Save recent devices.
+    Save recent devices and sort out the inactive ones.
     
     Args:
         recent_devices (dict): Recent devices.
-        devices_in_batch (dict): Devices in the batch.
         timestamp (int): Timestamp of the data.
         
     Returns:
         None
     '''
-
-    recent_devices.update(devices_in_batch)
+    assert type(recent_devices) == dict and type(timestamp) == int, 'Invalid data types'
     new_recent_devices = {}
 
     for mac, device in recent_devices.items():
@@ -300,3 +304,12 @@ def get_floor_trees() -> dict:
         floor_trees = pickle.load(file)
 
     return floor_trees
+
+
+if __name__ == '__main__':
+    data_api = Data_API()
+
+    batch = data_api.get_last_batch()
+    first_batch = True
+
+    generate_refined_data(batch=batch, first_batch=first_batch)

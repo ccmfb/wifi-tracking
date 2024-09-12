@@ -21,6 +21,7 @@ def get_density_image(
         floor_id: int, 
         dpi: int = 100,
         custom_colors: list = None,
+        mpl_cmap: str = None,
         alpha: float = 0.6,
         plot_devices: bool = False) -> bytes:
     '''
@@ -31,6 +32,7 @@ def get_density_image(
         floor_id (int): The floor id.
         dpi (int): The DPI of the image.
         custom_colors (list): Custom colors for the colormap, expects a list of three RGB values.
+        mpl_cmap (str): The name of the matplotlib colormap.
         alpha (float): The alpha value of the density map.
         plot_devices (bool): Whether to plot the devices.
     '''
@@ -56,6 +58,7 @@ def get_density_image(
         batch, 
         dpi=dpi,
         custom_colors=custom_colors, 
+        mpl_cmap=mpl_cmap,
         alpha=alpha,
         plot_devices=plot_devices
     )
@@ -211,6 +214,7 @@ def plot_density_map(
         batch: pd.DataFrame, 
         dpi: int = 100,
         custom_colors: list = None,
+        mpl_cmap: str = None,
         alpha: float = 0.6,
         plot_devices: bool = False) -> BytesIO:
     '''
@@ -224,6 +228,7 @@ def plot_density_map(
         batch (pandas.DataFrame): The batch of devices.
         dpi (int): The DPI of the image.
         custom_colors (list): Custom colors for the colormap, expects a list of three RGB values.
+        mpl_cmap (str): The name of the matplotlib colormap.
         alpha (float): The alpha value of the density map.
         plot_devices (bool): Whether to plot the devices.
         
@@ -233,8 +238,8 @@ def plot_density_map(
 
     fig, ax = plt.subplots(figsize=(8, 8), dpi=dpi)
 
-    if custom_colors is None:
-        cmap = 'coolwarm'
+    if mpl_cmap is not None:
+        cmap = mpl_cmap
     else:
         cmap = custom_colormap(custom_colors[0], custom_colors[1], custom_colors[2])
 

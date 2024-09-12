@@ -2,7 +2,7 @@ import json
 import time
 import sqlite3
 
-from api_requests import API_Requests
+from pythagoras_api import Pythagoras_API 
 
 import pandas as pd
 from tqdm import tqdm
@@ -31,7 +31,7 @@ def generate_occupancy_data(dataframe: pd.DataFrame) -> None:
 
     # Loading additional data
     department_mappings = get_department_mappings()
-    api = API_Requests()
+    api = Pythagoras_API()
 
     floor_infos = {}
     floor_workspaces = {}

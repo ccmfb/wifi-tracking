@@ -49,6 +49,7 @@ class Device:
         Returns:
             None
         '''
+        assert type(x) == float and type(y) == float and type(rssi) == float and type(timestamp) == int and type(floor_id) == int, 'Invalid data types'
 
         self.positions.append([x, y])
         self.rssi_values.append(rssi)
