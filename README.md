@@ -1,5 +1,6 @@
 Structure outline:
-![alt text](https://github.com/ccmfb/wifi-tracking2/blob/main/images/structure_outline.png?raw=true)
+![alt text](./images/diagram.svg)
+<img src='./images/diagram.svg'>
 
 
 Before loading any data, run init.py.

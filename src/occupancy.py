@@ -8,8 +8,6 @@ import pandas as pd
 from tqdm import tqdm
 
 
-PATH_FLOORPLANS = '../data/floorplans-main'
-
 
 def generate_occupancy_data(dataframe: pd.DataFrame) -> None:
     '''
