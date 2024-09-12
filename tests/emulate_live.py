@@ -32,7 +32,7 @@ for i, timestamp in enumerate(timestamps):
         cutoff_indices.append(i)
         prev_timestamp = timestamp
 
-    if len(cutoff_indices) == 2*6*12:
+    if len(cutoff_indices) == 2*6*24*2:
         break
 
 #print(cutoff_indices)

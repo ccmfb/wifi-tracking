@@ -2,7 +2,7 @@ Structure outline:
 
 ![alt text](./images/diagram.svg)
 
-1. Clone the repository.
+1. Clone the repository and ensure requirements are installed.
 2. Create the following folders:
     - data
     - data/id_mappings
