@@ -1,4 +1,5 @@
 Structure outline:
+
 ![alt text](./images/diagram.svg)
 
 

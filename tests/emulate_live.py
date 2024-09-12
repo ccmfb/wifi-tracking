@@ -32,8 +32,8 @@ for i, timestamp in enumerate(timestamps):
         cutoff_indices.append(i)
         prev_timestamp = timestamp
 
-    #if len(cutoff_indices) == 6*6*1:
-        #break
+    if len(cutoff_indices) == 2*6*12:
+        break
 
 #print(cutoff_indices)
 batches = []
