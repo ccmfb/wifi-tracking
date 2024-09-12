@@ -1,6 +1,5 @@
 Structure outline:
 ![alt text](./images/diagram.svg)
-<img src='./images/diagram.svg'>
 
 
 Before loading any data, run init.py.
