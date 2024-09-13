@@ -30,6 +30,7 @@ def init() -> None:
     init_saved_objects(floor_ids, api)
     init_floor_to_rooms_mapping(floor_ids, api)
     init_department_mappings(api)
+    init_floorId_mapId_mapping()
 
     print('Initialising necessary files complete.')
 
@@ -118,7 +119,50 @@ def init_department_mappings(api: Pythagoras_API) -> None:
 
     with open(f'../data/id_mappings/department_mappings.json', 'w') as file:
         json.dump(department_mappings, file)
+
+
+def init_floorId_mapId_mapping() -> None:
+    '''
+    Generates floorId_to_mapId.json file from the floorplans-main folder.
+    '''
+
+    floorId_to_mapId = {}
+
+    floor_ids = os.listdir(f'{PATH_FLOORPLANS}/floors_by_id')
+    for floor_id in floor_ids:
+        floor_id = int(floor_id)
+        mapId = get_mapId_from_floorId(floor_id)
+
+        if mapId is not None:
+            floorId_to_mapId[floor_id] = mapId
+
+    with open(f'../data/id_mappings/floorId_to_mapId.json', 'w') as file:
+        json.dump(floorId_to_mapId, file)
+
+
+def get_mapId_from_floorId(floor_id: int) -> str:
+    '''
+    Get the mapId from the floorId.
     
+    Args:
+        floor_id (int): Floor ID.
+        
+    Returns:
+        mapId (str): Map ID.
+    '''
+
+    path_floor_state = f'{PATH_FLOORPLANS}/floors_by_id/{floor_id}/state.yaml'
+
+    if not os.path.exists(path_floor_state):
+        return None
+    
+    with open(path_floor_state) as file:
+        data = yaml.safe_load(file)
+    
+    mapId = data['mist_mapid']
+
+    return mapId
+
 
 def get_floor_offset(building_id: int) -> list:
     '''
@@ -181,4 +225,6 @@ def generate_room_geometries(data_workspace: list, offset: list) -> tuple:
 
 
 if __name__ == '__main__':
-    init()
+    #init()
+
+    init_floorId_mapId_mapping()
