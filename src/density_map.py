@@ -238,6 +238,7 @@ def plot_density_map(
     '''
 
     fig, ax = plt.subplots(dpi=dpi)
+    plt.gca().set_aspect('equal', adjustable='box')
 
     if mpl_cmap is not None:
         cmap = mpl_cmap
