@@ -225,6 +225,4 @@ def generate_room_geometries(data_workspace: list, offset: list) -> tuple:
 
 
 if __name__ == '__main__':
-    #init()
-
-    init_floorId_mapId_mapping()
+    init()

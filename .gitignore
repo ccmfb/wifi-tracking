@@ -3,6 +3,5 @@
 **/floorplans-main
 **/data
 **/.vscode
-*.json
 *.DS_Store
 *.env

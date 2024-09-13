@@ -10,11 +10,10 @@
     - data/id_mappings
     - data/objects
 3. Get ahold of the following files/folders:
-    - data/id_mappings/floorId_to_mapId.json
     - data/floorplans-main
-    - data/zValue_to_pValue.json
     - .env
-4. Run src/init.py
+4. Move src/zValue_to_pValue.json into data folder
+5. Run src/init.py
 5. Run src/main.py to process 5 minutes of data from live data API
 
 After the steps above one can:
