@@ -42,7 +42,14 @@ def generate_occupancy_data(dataframe: pd.DataFrame) -> None:
     data = populate_data(data, batches, floor_infos, floor_workspaces, department_mappings)
 
     # Add data to database
-    add_to_db(data)
+    # data = [data[key] for key in data.keys()]
+    # data = list(map(list, zip(*data)))
+    # add_to_db(data)
+
+    # Or, add data to CSV
+    add_to_csv(data)
+
+
 
 
 def init_data() -> dict:
@@ -119,7 +126,6 @@ def populate_data(data: dict, batches: list, floor_infos: dict, floor_workspaces
 
         for room_id in room_ids:
             if room_valid(batch, room_id) == False: continue
-            room_id = int(room_id)
 
             room = batch[batch['room_id'] == room_id]
             floor_id = room['floor_id'].to_list()[0]
@@ -131,6 +137,8 @@ def populate_data(data: dict, batches: list, floor_infos: dict, floor_workspaces
             data['timestamp'].append(room['timestamp'].to_list()[0])
             data['date_time'].append(convert_timestamp_to_dateTime(room['timestamp'].to_list()[0]))
             data['num_devices'].append(len(room))
+
+            room_id = int(room_id)
 
             # room info
             data['room_id'].append(room_id)
@@ -165,10 +173,16 @@ def populate_data(data: dict, batches: list, floor_infos: dict, floor_workspaces
             else: 
                 data = add_owner_data(data, floor_workspace, department_mappings, room_id)
 
-    data = [data[key] for key in data.keys()]
-    data = list(map(list, zip(*data)))
 
     return data
+
+
+def add_to_csv(data: dict) -> None:
+    print(data)
+    df = pd.DataFrame(data)
+    print(df.head())
+
+    df.to_csv('../data/occupancy.csv', index=False)
 
 
 def add_to_db(data: list) -> None:
@@ -234,7 +248,8 @@ def room_valid(batch: pd.DataFrame, room_id: str) -> bool:
     Check if the room is valid.
     
     Args:
-        room_id (int): Room ID.
+        batch (pd.DataFrame): Batch.
+        room_id (str): Room ID.
         
     Returns:
         bool: True if the room is valid, False otherwise.
@@ -243,7 +258,8 @@ def room_valid(batch: pd.DataFrame, room_id: str) -> bool:
     if room_id == 'None':
         return False
 
-    room_id = int(room_id)
+    #room_id = int(room_id)
+
     room = batch[batch['room_id'] == room_id]
     if len(room) == 0:
         return False
