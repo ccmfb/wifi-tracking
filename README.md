@@ -1,8 +1,8 @@
-# Structure outline
+## Structure outline
 
 ![alt text](./images/diagram.svg)
 
-# How to run the code
+## How to run the code
 
 1. Clone the repository and ensure requirements are installed
 2. Create the following folders:
@@ -21,7 +21,7 @@ After the steps above one can:
 - Run src/occupancy.py to convert and enrich refined_data.db to occupancy.db
 - Run src/client_api.py to start the density map API app
 
-# Todo / Suggestions / Extensions
+## Todo / Suggestions / Extensions
 - Generate data/zValue_to_pValue.json file in init.py
 - Split init.py into init.py for first time running and update.py for pythagoras updates
 
