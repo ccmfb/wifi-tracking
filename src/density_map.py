@@ -237,7 +237,7 @@ def plot_density_map(
         BytesIO: The image buffer.
     '''
 
-    fig, ax = plt.subplots(figsize=(8, 8), dpi=dpi)
+    fig, ax = plt.subplots(dpi=dpi)
 
     if mpl_cmap is not None:
         cmap = mpl_cmap
