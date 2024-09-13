@@ -23,7 +23,8 @@ def get_density_image(
         custom_colors: list = None,
         mpl_cmap: str = None,
         alpha: float = 0.6,
-        plot_devices: bool = False) -> bytes:
+        plot_devices: bool = False,
+        grid_size: float = 0.1) -> bytes:
     '''
     Generates a density map image based on the devices in the batch.
 
@@ -42,7 +43,7 @@ def get_density_image(
     batch = batch.reset_index(drop=True)
 
     rooms = get_rooms(floor_id)
-    xx, yy = meshgrid(rooms, grid_size=0.1)
+    xx, yy = meshgrid(rooms, grid_size=grid_size)
 
     # Density map
     density_map = get_density_map(batch, xx, yy)

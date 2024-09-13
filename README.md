@@ -21,7 +21,6 @@ After the steps above one can:
 - Run src/client_api.py to start the density map API app
 
 ## Todo / Suggestions / Extensions
-- Generate data/zValue_to_pValue.json file in init.py
 - Split init.py into init.py for first time running and update.py for pythagoras updates
 
 - Elliptic position probability density function

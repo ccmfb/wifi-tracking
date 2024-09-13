@@ -41,6 +41,7 @@ def get_density_map(floor_id):
     alpha = request.args.get('alpha', default=0.6, type=float)
     plot_devices = request.args.get('plot_devices', default=False, type=bool)
     dpi = request.args.get('dpi', default=200, type=int)
+    grid_size = request.args.get('grid_size', default=0.1, type=float)
 
     color1 = request.args.get('color1', default='[100,0,0]')
     color2 = request.args.get('color2', default='[0,100,0]')
@@ -56,6 +57,8 @@ def get_density_map(floor_id):
 
     custom_colors = [color1, color2, color3]
 
+    print(f'mpl_cmap: {mpl_cmap}, alpha: {alpha}, plot_devices: {plot_devices}, dpi: {dpi}, custom_colors: {custom_colors}, grid_size: {grid_size}')
+
     # Loading most recent batch
     batch = get_last_batch()
 
@@ -67,7 +70,8 @@ def get_density_map(floor_id):
         custom_colors=custom_colors,
         mpl_cmap=mpl_cmap,
         alpha=alpha,
-        plot_devices=plot_devices
+        plot_devices=plot_devices,
+        grid_size=grid_size
     )
 
     return send_file(
